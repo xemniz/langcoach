@@ -1,8 +1,8 @@
 [versions]
 # Build tooling
-kotlin = "2.3.21"
-agp = "8.9.0"
-ksp = "2.3.21-2.0.2"
+kotlin = "2.3.20"
+agp = "8.9.1"
+ksp = "2.3.7"
 gradle = "8.11.1"
 
 # Compose Multiplatform & Jetpack Compose
@@ -18,8 +18,8 @@ datetime = "0.6.2"
 ktor = "3.0.3"
 
 # Persistence
-room = "3.0.0"
-sqlite = "2.6.0"
+room = "3.0.0-alpha03"
+sqlite = "2.6.2"
 datastore = "1.2.0"
 
 # AndroidX (KMP-published)
@@ -43,7 +43,7 @@ fsrs = "0.5.0"
 # minSdk / target
 minSdk = "26"
 targetSdk = "35"
-compileSdk = "35"
+compileSdk = "36"
 
 [libraries]
 # Kotlin
@@ -62,8 +62,8 @@ ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "k
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
 # Room 3 (KSP-only)
-androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
-androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+androidx-room-runtime = { module = "androidx.room3:room3-runtime", version.ref = "room" }
+androidx-room-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room" }
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
 
 # DataStore
@@ -129,4 +129,4 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-room = { id = "androidx.room", version.ref = "room" }
+room = { id = "androidx.room3", version.ref = "room" }

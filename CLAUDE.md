@@ -32,8 +32,8 @@ guessing a version**.
 - Kotlin 2.3.x with K2 compiler
 - AGP 8.9+
 - Compose Multiplatform 1.10.x with AndroidX ViewModel KMP
-- AndroidX Navigation 3 (KMP-supported)
-- Room 3 (KSP-only, Kotlin-only generation, suspend / Flow DAOs)
+- AndroidX Navigation 3 (Android-only for now; KMP support TBD)
+- Room 3 alpha (`androidx.room3` package, KSP-only, suspend / Flow DAOs)
 - Ktor Client 3.x with WebSockets — Darwin engine on iOS, OkHttp on Android
 - DataStore (KMP) for non-secret preferences
 - Koin 4 for DI; `koin-compose-viewmodel` for ViewModels
