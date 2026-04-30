@@ -27,6 +27,7 @@ kotlin {
         commonMain.dependencies {
             implementation(project(":shared:core"))
             implementation(project(":shared:domain"))
+            implementation(project(":shared:data"))
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.bundles.ktor.common)

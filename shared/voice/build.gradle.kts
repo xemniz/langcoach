@@ -26,6 +26,7 @@ kotlin {
         commonMain.dependencies {
             implementation(project(":shared:core"))
             implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.koin.core)
         }
     }
 }

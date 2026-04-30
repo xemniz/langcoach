@@ -22,4 +22,10 @@ interface VocabDao {
 
     @Query("SELECT COUNT(*) FROM vocab_items")
     suspend fun count(): Int
+
+    @Query("SELECT word FROM vocab_items WHERE targetLang = :targetLang ORDER BY createdAt DESC LIMIT :limit")
+    suspend fun recentWords(targetLang: String, limit: Int): List<String>
+
+    @Query("SELECT * FROM vocab_items WHERE word = :word AND lemma = :lemma AND targetLang = :targetLang LIMIT 1")
+    suspend fun findByWord(word: String, lemma: String, targetLang: String): VocabItem?
 }

@@ -1,5 +1,6 @@
 package com.xemniz.langcoach.data.db
 
+import androidx.room3.ColumnInfo
 import androidx.room3.Entity
 import androidx.room3.PrimaryKey
 
@@ -17,4 +18,5 @@ data class VocabItem(
     val dueAt: Long, // epoch millis
     val lastReviewAt: Long? = null,
     val createdAt: Long, // epoch millis
+    @ColumnInfo(defaultValue = "heard") val source: String = "heard",
 )

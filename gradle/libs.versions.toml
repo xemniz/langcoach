@@ -25,6 +25,7 @@ datastore = "1.2.0"
 # AndroidX (KMP-published)
 lifecycle = "2.9.0"
 navigation3 = "1.0.0-alpha01"
+navigationevent = "1.0.0-alpha01"
 savedstate = "1.3.0"
 
 # DI
@@ -77,6 +78,7 @@ androidx-lifecycle-runtime-compose = { module = "org.jetbrains.androidx.lifecycl
 # AndroidX Navigation 3 (KMP)
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
 androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
+androidx-navigationevent = { module = "androidx.navigationevent:navigationevent", version = { strictly = "1.0.0-alpha01" } }
 
 # AndroidX SavedState (KMP)
 androidx-savedstate = { module = "org.jetbrains.androidx.savedstate:savedstate", version.ref = "savedstate" }

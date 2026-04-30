@@ -1,8 +1,15 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.android.library)
     alias(libs.plugins.compose.multiplatform)
+}
+
+val devOpenAiKey: String = run {
+    val f = rootProject.file("local.properties")
+    if (!f.exists()) "" else Properties().apply { f.inputStream().use { load(it) } }.getProperty("OPENAI_API_KEY", "")
 }
 
 kotlin {
@@ -42,11 +49,13 @@ kotlin {
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
+            implementation(libs.kotlinx.datetime)
         }
 
         androidMain.dependencies {
             implementation(libs.kotlinx.coroutines.android)
-            implementation(libs.bundles.navigation3)
+            implementation(libs.koin.android)
+            implementation(libs.androidx.activity.compose)
         }
     }
 }
@@ -57,6 +66,19 @@ android {
 
     defaultConfig {
         minSdk = libs.versions.minSdk.get().toInt()
+    }
+
+    buildFeatures {
+        buildConfig = true
+    }
+
+    buildTypes {
+        getByName("debug") {
+            buildConfigField("String", "DEV_OPENAI_API_KEY", "\"$devOpenAiKey\"")
+        }
+        getByName("release") {
+            buildConfigField("String", "DEV_OPENAI_API_KEY", "\"\"")
+        }
     }
 
     compileOptions {
