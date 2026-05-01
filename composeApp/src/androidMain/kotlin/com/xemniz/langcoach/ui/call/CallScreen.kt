@@ -51,7 +51,8 @@ fun CallScreen(
     }
 
     LaunchedEffect(Unit) {
-        if (state == CallState.Idle) {
+        val s = state
+        if (s is CallState.Idle || s is CallState.Ended || s is CallState.Failed) {
             val granted = ContextCompat.checkSelfPermission(
                 context, Manifest.permission.RECORD_AUDIO,
             ) == PackageManager.PERMISSION_GRANTED

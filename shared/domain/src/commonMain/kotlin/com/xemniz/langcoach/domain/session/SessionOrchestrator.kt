@@ -79,6 +79,30 @@ Hard rules for your first turn:
 """.trimIndent()
     }
 
+    /**
+     * Returns the user's target language as an ISO 639-1 two-letter code, or null if it can't be
+     * determined. Whisper accepts these codes ("es", "fr", etc.) as a hint to constrain language
+     * detection. If [ProfilePrefs.targetLang] already looks like a code, it's returned lower-cased;
+     * otherwise common English language names are mapped to codes.
+     */
+    suspend fun transcriptionLanguageCode(): String? {
+        val raw = profilePrefs.targetLang.first().trim()
+        if (raw.isEmpty()) return null
+        if (raw.length == 2 && raw.all { it.isLetter() }) return raw.lowercase()
+        return when (raw.lowercase()) {
+            "english" -> "en"
+            "spanish", "español", "espanol" -> "es"
+            "french", "français", "francais" -> "fr"
+            "german", "deutsch" -> "de"
+            "italian", "italiano" -> "it"
+            "portuguese", "português", "portugues" -> "pt"
+            "russian", "русский" -> "ru"
+            "japanese", "日本語" -> "ja"
+            "chinese", "中文", "mandarin" -> "zh"
+            else -> null
+        }
+    }
+
     private fun currentMoment(): String {
         val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
         val day = now.dayOfWeek.name.lowercase().replaceFirstChar(Char::uppercaseChar)

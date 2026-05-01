@@ -55,10 +55,17 @@ class CallViewModel(
 
     private fun connect() {
         if (_state.value is CallState.Live || _state.value is CallState.Connecting) return
+        session = null
+        sessionId = null
+        captureJob = null
+        eventsJob = null
+        tokensIn = 0
+        tokensOut = 0
         _state.value = CallState.Connecting
         callSessionLifecycle.start()
         viewModelScope.launch {
             val prompt = orchestrator.buildSystemPrompt()
+            val transcriptionLanguage = orchestrator.transcriptionLanguageCode()
             val newId = startSession()
             sessionId = newId
             when (val r = realtimeClient.connect()) {
@@ -67,7 +74,7 @@ class CallViewModel(
                 }
                 is AppResult.Success -> {
                     session = r.value
-                    r.value.configure(systemPrompt = prompt)
+                    r.value.configure(systemPrompt = prompt, transcriptionLanguage = transcriptionLanguage)
                     audioPlayback.start()
                     _state.value = CallState.Live(
                         sessionId = newId,
@@ -87,6 +94,10 @@ class CallViewModel(
                 when (ev) {
                     is RealtimeEvent.AudioDelta -> audioPlayback.write(ev.pcm16Le)
                     is RealtimeEvent.TranscriptDelta -> appendFragment(
+                        if (ev.isUser) ChatRole.User else ChatRole.Assistant,
+                        ev.text,
+                    )
+                    is RealtimeEvent.TranscriptCompleted -> replaceLastFragment(
                         if (ev.isUser) ChatRole.User else ChatRole.Assistant,
                         ev.text,
                     )
@@ -123,6 +134,20 @@ class CallViewModel(
                 msgs.dropLast(1) + last.copy(text = last.text + fragment)
             } else {
                 msgs + ChatMessage(role, fragment)
+            }
+            current.copy(messages = updated)
+        }
+    }
+
+    private fun replaceLastFragment(role: ChatRole, fullText: String) {
+        _state.update { current ->
+            if (current !is CallState.Live) return@update current
+            val msgs = current.messages
+            val last = msgs.lastOrNull()
+            val updated = if (last != null && last.role == role) {
+                msgs.dropLast(1) + last.copy(text = fullText)
+            } else {
+                msgs + ChatMessage(role, fullText)
             }
             current.copy(messages = updated)
         }

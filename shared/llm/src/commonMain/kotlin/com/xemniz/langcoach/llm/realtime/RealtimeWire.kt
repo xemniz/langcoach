@@ -1,5 +1,7 @@
 package com.xemniz.langcoach.llm.realtime
 
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -19,8 +21,13 @@ internal data class WireSessionConfig(
     val turn_detection: WireTurnDetection = WireTurnDetection(),
 )
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
-internal data class WireTranscriptionCfg(val model: String = "whisper-1")
+internal data class WireTranscriptionCfg(
+    val model: String = "whisper-1",
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val language: String? = null,
+)
 
 @Serializable
 internal data class WireTurnDetection(

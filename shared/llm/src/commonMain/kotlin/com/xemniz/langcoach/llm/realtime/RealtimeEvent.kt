@@ -9,6 +9,9 @@ sealed interface RealtimeEvent {
     /** Live text transcript fragment. isUser=true for user STT, false for assistant. */
     data class TranscriptDelta(val text: String, val isUser: Boolean) : RealtimeEvent
 
+    /** Final, full transcript for a turn. Replaces any accumulated deltas for that role. */
+    data class TranscriptCompleted(val text: String, val isUser: Boolean) : RealtimeEvent
+
     data class ResponseDone(val tokensIn: Int, val tokensOut: Int) : RealtimeEvent
 
     data class ErrorEvent(val message: String) : RealtimeEvent

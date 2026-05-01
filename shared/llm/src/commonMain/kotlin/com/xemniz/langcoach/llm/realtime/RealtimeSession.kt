@@ -33,6 +33,7 @@ class RealtimeSession internal constructor(
     private var currentWs: DefaultClientWebSocketSession = initialWs
     private var lastSystemPrompt: String? = null
     private var lastVoice: String? = null
+    private var lastTranscriptionLanguage: String? = null
     private var closed = false
 
     internal fun startReading() {
@@ -73,7 +74,13 @@ class RealtimeSession internal constructor(
                 if (prompt != null) {
                     runCatching {
                         val msg = WireSessionUpdate(
-                            session = WireSessionConfig(instructions = prompt, voice = lastVoice ?: "alloy"),
+                            session = WireSessionConfig(
+                                instructions = prompt,
+                                voice = lastVoice ?: "alloy",
+                                input_audio_transcription = WireTranscriptionCfg(
+                                    language = lastTranscriptionLanguage,
+                                ),
+                            ),
                         )
                         newWs.send(json.encodeToString(WireSessionUpdate.serializer(), msg))
                     }
@@ -96,11 +103,14 @@ class RealtimeSession internal constructor(
             "response.audio_transcript.delta" -> ev.delta?.let {
                 _events.emit(RealtimeEvent.TranscriptDelta(it, isUser = false))
             }
+            "response.audio_transcript.done" -> ev.transcript?.let {
+                _events.emit(RealtimeEvent.TranscriptCompleted(it, isUser = false))
+            }
             "conversation.item.input_audio_transcription.delta" -> ev.delta?.let {
                 _events.emit(RealtimeEvent.TranscriptDelta(it, isUser = true))
             }
             "conversation.item.input_audio_transcription.completed" -> ev.transcript?.let {
-                _events.emit(RealtimeEvent.TranscriptDelta(it, isUser = true))
+                _events.emit(RealtimeEvent.TranscriptCompleted(it, isUser = true))
             }
             "response.done" -> {
                 val u = ev.response?.usage
@@ -111,10 +121,21 @@ class RealtimeSession internal constructor(
         }
     }
 
-    suspend fun configure(systemPrompt: String, voice: String = "alloy") {
+    suspend fun configure(
+        systemPrompt: String,
+        voice: String = "alloy",
+        transcriptionLanguage: String? = null,
+    ) {
         lastSystemPrompt = systemPrompt
         lastVoice = voice
-        val msg = WireSessionUpdate(session = WireSessionConfig(instructions = systemPrompt, voice = voice))
+        lastTranscriptionLanguage = transcriptionLanguage
+        val msg = WireSessionUpdate(
+            session = WireSessionConfig(
+                instructions = systemPrompt,
+                voice = voice,
+                input_audio_transcription = WireTranscriptionCfg(language = transcriptionLanguage),
+            ),
+        )
         runCatching { currentWs.send(json.encodeToString(WireSessionUpdate.serializer(), msg)) }
     }
 
