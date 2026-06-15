@@ -19,7 +19,6 @@ class CallSessionService : Service() {
 
     private var audioManager: AudioManager? = null
     private var focusRequest: AudioFocusRequest? = null
-    private var savedAudioMode: Int = AudioManager.MODE_NORMAL
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -52,10 +51,9 @@ class CallSessionService : Service() {
     private fun acquireAudioFocus() {
         val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         audioManager = am
-        savedAudioMode = am.mode
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val attrs = AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                .setUsage(AudioAttributes.USAGE_MEDIA)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                 .build()
             val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
@@ -67,9 +65,8 @@ class CallSessionService : Service() {
             focusRequest = req
         } else {
             @Suppress("DEPRECATION")
-            am.requestAudioFocus(null, AudioManager.STREAM_VOICE_CALL, AudioManager.AUDIOFOCUS_GAIN)
+            am.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
         }
-        am.mode = AudioManager.MODE_IN_COMMUNICATION
     }
 
     private fun releaseAudioFocus() {
@@ -80,7 +77,6 @@ class CallSessionService : Service() {
             @Suppress("DEPRECATION")
             am.abandonAudioFocus(null)
         }
-        am.mode = savedAudioMode
         focusRequest = null
         audioManager = null
     }

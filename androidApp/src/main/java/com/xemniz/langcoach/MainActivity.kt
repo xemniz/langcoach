@@ -11,7 +11,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        volumeControlStream = AudioManager.STREAM_VOICE_CALL
+        volumeControlStream = AudioManager.STREAM_MUSIC
         setContent {
             AppNav()
         }
