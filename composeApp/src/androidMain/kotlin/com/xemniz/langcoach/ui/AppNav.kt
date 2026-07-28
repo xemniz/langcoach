@@ -18,6 +18,9 @@ import androidx.compose.ui.Modifier
 import com.xemniz.langcoach.ui.call.CallScreen
 import com.xemniz.langcoach.ui.coach.CoachMemoryScreen
 import com.xemniz.langcoach.ui.errors.ErrorsScreen
+import com.xemniz.langcoach.ui.demo.DemoCallScreen
+import com.xemniz.langcoach.ui.demo.DemoRecap
+import com.xemniz.langcoach.ui.demo.SessionRecapScreen
 import com.xemniz.langcoach.ui.home.HomeScreen
 import com.xemniz.langcoach.ui.settings.SettingsScreen
 import com.xemniz.langcoach.ui.usage.UsageDashboardScreen
@@ -31,6 +34,8 @@ private sealed interface Route {
     data object Errors : Route
     data object Usage : Route
     data object CoachMemory : Route
+    data object Demo : Route
+    data class Recap(val value: DemoRecap) : Route
 }
 
 @Composable
@@ -46,9 +51,9 @@ fun AppNav() {
                 HomeScreen(
                     onSettingsClick = { backStack.add(Route.Settings) },
                     onStartSession = { backStack.add(Route.Call) },
+                    onDemoClick = { backStack.add(Route.Demo) },
                     onVocabClick = { backStack.add(Route.Vocab) },
-                    onErrorsClick = { backStack.add(Route.Errors) },
-                    onUsageClick = { backStack.add(Route.Usage) },
+                    onProgressClick = { backStack.add(Route.Errors) },
                     onCoachMemoryClick = { backStack.add(Route.CoachMemory) },
                 )
             }
@@ -58,6 +63,18 @@ fun AppNav() {
             Route.Usage -> WithBar("Usage", pop) { UsageDashboardScreen() }
             Route.CoachMemory -> WithBar("Coach memory", pop) { CoachMemoryScreen() }
             Route.Call -> WithBar("Session", pop) { CallScreen(onDone = pop) }
+            Route.Demo -> BareScaffold {
+                DemoCallScreen(
+                    onFinish = { recap -> backStack.add(Route.Recap(recap)) },
+                    onExit = pop,
+                )
+            }
+            is Route.Recap -> BareScaffold {
+                SessionRecapScreen(
+                    recap = (backStack.last() as Route.Recap).value,
+                    onDone = { backStack.clear(); backStack.add(Route.Home) },
+                )
+            }
         }
     }
 }

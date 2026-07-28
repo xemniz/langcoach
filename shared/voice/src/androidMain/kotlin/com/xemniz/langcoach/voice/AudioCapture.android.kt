@@ -7,6 +7,8 @@ import android.media.MediaRecorder
 import android.media.audiofx.AcousticEchoCanceler
 import android.media.audiofx.NoiseSuppressor
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -15,6 +17,8 @@ import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicReference
 
 actual class AudioCapture actual constructor() {
+    private val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     private data class Capture(
         val recorder: AudioRecord,
         val aec: AcousticEchoCanceler?,
@@ -86,11 +90,13 @@ actual class AudioCapture actual constructor() {
     }.flowOn(Dispatchers.IO)
 
     actual fun stop() {
-        current.getAndSet(null)?.let {
-            runCatching { it.aec?.release() }
-            runCatching { it.ns?.release() }
-            runCatching { it.recorder.stop() }
-            runCatching { it.recorder.release() }
+        current.getAndSet(null)?.let { capture ->
+            cleanupScope.launch {
+                runCatching { capture.aec?.release() }
+                runCatching { capture.ns?.release() }
+                runCatching { capture.recorder.stop() }
+                runCatching { capture.recorder.release() }
+            }
         }
     }
 }

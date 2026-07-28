@@ -1,0 +1,606 @@
+{
+  "eval_version": "tutor-eval-v1.1.0",
+  "prompt_version": "tutor-v1.0.0",
+  "prompt_sha256": "c2c4cebc1762c2fb6c07e6e5a7e7fe7838cbcdc8dd934424280f71a1f83e7161",
+  "run_at": "2026-07-25T08:44:51.012999+00:00",
+  "realtime_model": "gpt-realtime-2.1",
+  "judge_model": "gpt-4.1-mini",
+  "summary": {
+    "suite_score": 4.83,
+    "passed_cases": 12,
+    "total_cases": 12,
+    "hard_violations": 0,
+    "passed": true
+  },
+  "results": [
+    {
+      "id": "opening_callback_without_creepiness",
+      "split": "regression",
+      "tags": [
+        "opening",
+        "memory",
+        "continuity"
+      ],
+      "score": 5,
+      "passed": true,
+      "grade": {
+        "scores": {
+          "engagement": 5,
+          "teaching_value": 5,
+          "correction_restraint": 5,
+          "memory_use": 5,
+          "variety_non_repetition": 5,
+          "level_language_fit": 5,
+          "conversation_continuity": 5
+        },
+        "hard_violation": false,
+        "reason": "The assistant opens with a relevant callback to the previous session about explaining a design decision, using a concrete question in Spanish that challenges the learner to defend a trade-off. The prompt is concise, natural, appropriate for B1 level, and follows the conversation thread without sounding like an interview or introducing unrelated elements.",
+        "best_evidence": "'Imagina que ya explicaste tu decisión de diseño para una app, pero el entrevistador quiere más. ¿Cómo defenderías el principal compromiso (trade-off) que aceptaste sin sonar a la defensiva?'",
+        "improvement": "No improvement needed; the opening is clear, concise, on-topic, and meets all requirements."
+      },
+      "deterministic_checks": {
+        "assistant_turns": 1,
+        "max_questions_in_one_turn": 1,
+        "repeated_questions": [],
+        "forbidden_opening": false
+      },
+      "transcript": [
+        {
+          "role": "assistant",
+          "text": "Imagina que ya explicaste tu decisión de diseño para una app, pero el entrevistador quiere más. ¿Cómo defenderías el principal compromiso (trade-off) que aceptaste sin sonar a la defensiva?"
+        }
+      ]
+    },
+    {
+      "id": "single_high_value_recast",
+      "split": "regression",
+      "tags": [
+        "correction",
+        "past-tense",
+        "fluency"
+      ],
+      "score": 5,
+      "passed": true,
+      "grade": {
+        "scores": {
+          "engagement": 5,
+          "teaching_value": 5,
+          "correction_restraint": 5,
+          "memory_use": 4,
+          "variety_non_repetition": 5,
+          "level_language_fit": 5,
+          "conversation_continuity": 5
+        },
+        "hard_violation": false,
+        "reason": "The assistant responded naturally to the learner's meaning, corrected the verb tense error with modeling ('fui' instead of 'voy'), and continued the conversation with a relevant question about the type of apples chosen. There was only one correction, no grammar lecture, and no forced repetition. The language level was appropriate and it connected well with the learner's interest in cooking. The prompt was varied and concise.",
+        "best_evidence": "Qué plan tan rico. Ayer fui al mercado: esa forma pasada suena más natural aquí. ¿Qué tipo de manzanas elegiste para la tarta?",
+        "improvement": "The assistant could have slightly personalized the prompt by connecting more explicitly to the learner's known interest in shopping at a neighborhood market, to leverage memory use further."
+      },
+      "deterministic_checks": {
+        "assistant_turns": 1,
+        "max_questions_in_one_turn": 1,
+        "repeated_questions": [],
+        "forbidden_opening": false
+      },
+      "transcript": [
+        {
+          "role": "user",
+          "text": "Ayer voy al mercado y compré manzanas para hacer una tarta."
+        },
+        {
+          "role": "assistant",
+          "text": "Qué plan tan rico. Ayer fui al mercado: esa forma pasada suena más natural aquí.\n\n¿Qué tipo de manzanas elegiste para la tarta?"
+        }
+      ]
+    },
+    {
+      "id": "error_flood_choose_one",
+      "split": "regression",
+      "tags": [
+        "correction",
+        "restraint",
+        "multiple-errors"
+      ],
+      "score": 4.75,
+      "passed": true,
+      "grade": {
+        "scores": {
+          "engagement": 5,
+          "teaching_value": 4,
+          "correction_restraint": 5,
+          "memory_use": 1,
+          "variety_non_repetition": 4,
+          "level_language_fit": 5,
+          "conversation_continuity": 5
+        },
+        "hard_violation": false,
+        "reason": "The tutor addresses the learner's intended shopping story by correcting only the verb tense ('fui'), which is the key error affecting meaning. The tutor avoids scolding or giving multiple corrections, aligning well with the A2 level, and uses simple language. The follow-up question is open-ended and relevant, increasing engagement and continuing the conversation naturally. The correction is concise, and there's no evidence of unnecessary memory use or repetition.",
+        "best_evidence": "The tutor corrected only the verb 'ir' to 'fui' and then asked a focused question: '¿Por qué eran tan caras?',' demonstrating selective correction and engagement without overwhelming the learner.",
+        "improvement": "The tutor could gently hint at plural agreement for 'manzana' and 'caro' in a later turn to avoid overwhelming the learner now, maintaining correction restraint."
+      },
+      "deterministic_checks": {
+        "assistant_turns": 1,
+        "max_questions_in_one_turn": 1,
+        "repeated_questions": [],
+        "forbidden_opening": false
+      },
+      "transcript": [
+        {
+          "role": "user",
+          "text": "Ayer yo ir al tiendas y mi amigo compró dos manzana caro."
+        },
+        {
+          "role": "assistant",
+          "text": "Ayer fui a las tiendas: esa es la forma en pasado.  \nQué curioso, dos manzanas caras suena como una compra muy específica. ¿Por qué eran tan caras?"
+        }
+      ]
+    },
+    {
+      "id": "correct_story_no_unnecessary_correction",
+      "split": "regression",
+      "tags": [
+        "negative-case",
+        "engagement",
+        "no-correction"
+      ],
+      "score": 5,
+      "passed": true,
+      "grade": {
+        "scores": {
+          "engagement": 5,
+          "teaching_value": 4,
+          "correction_restraint": 5,
+          "memory_use": 4,
+          "variety_non_repetition": 5,
+          "level_language_fit": 5,
+          "conversation_continuity": 5
+        },
+        "hard_violation": false,
+        "reason": "The assistant responded directly to the learner's story by specifically commenting on the venue and performance ('pequeño, abarrotado y con esa energía que te atrapa'). It reinforced the correct use of 'abarrotado' naturally without unnecessary correction and extended the conversation with a relevant question about the group, maintaining thread continuity. The response is concise, fitting B2 level, varied, and engaging, with no off-topic shifts or forced repetition.",
+        "best_evidence": "Qué buena escena: pequeño, abarrotado y con esa energía que te atrapa. Usaste “abarrotado” muy bien, suena natural.\n\n¿Qué fue lo que más te sorprendió del grupo?",
+        "improvement": "The teaching value could be slightly enhanced by including a brief, implicit learning point or a subtle language tip, but given the constraints not to correct or overemphasize, the current balance is excellent."
+      },
+      "deterministic_checks": {
+        "assistant_turns": 1,
+        "max_questions_in_one_turn": 1,
+        "repeated_questions": [],
+        "forbidden_opening": false
+      },
+      "transcript": [
+        {
+          "role": "user",
+          "text": "Anoche descubrí un local diminuto cerca de Ruzafa. Estaba abarrotado, pero el grupo tocó con tanta energía que nadie quería irse."
+        },
+        {
+          "role": "assistant",
+          "text": "Qué buena escena: pequeño, abarrotado y con esa energía que te atrapa. Usaste “abarrotado” muy bien, suena natural.\n\n¿Qué fue lo que más te sorprendió del grupo?"
+        }
+      ]
+    },
+    {
+      "id": "recurring_error_then_move_on",
+      "split": "regression",
+      "tags": [
+        "multi-turn",
+        "self-repair",
+        "non-repetition"
+      ],
+      "score": 5,
+      "passed": true,
+      "grade": {
+        "scores": {
+          "engagement": 5,
+          "teaching_value": 5,
+          "correction_restraint": 5,
+          "memory_use": 4,
+          "variety_non_repetition": 5,
+          "level_language_fit": 5,
+          "conversation_continuity": 5
+        },
+        "hard_violation": false,
+        "reason": "The assistant provided one subtle correction of the recurring por/para confusion early on, then appropriately moved on to the topic of the user's upcoming presentation, maintaining relevance and encouragement. The correction was minimally intrusive, and questions were varied and limited to one per turn, avoiding drills or repeated questions. The assistant linked to the learner's current goals and concerns, using concise natural language at B1 level. Memory clues about prior por/para corrections were used sparingly.",
+        "best_evidence": "\"Pequeño ajuste: suena más natural decir 'para mi trabajo'.\"  \nConveying encouragement and introducing a new related prompt about the presentation later.",
+        "improvement": "The assistant could have explicitly acknowledged the learner's dislike of repetitive drills once more, possibly to enhance engagement. Also, a slightly more explicit recap of the previous por/para tip could reinforce learning without drilling."
+      },
+      "deterministic_checks": {
+        "assistant_turns": 3,
+        "max_questions_in_one_turn": 1,
+        "repeated_questions": [],
+        "forbidden_opening": false
+      },
+      "transcript": [
+        {
+          "role": "user",
+          "text": "Estudio español por hablar mejor con mis clientes."
+        },
+        {
+          "role": "assistant",
+          "text": "Estudias español para hablar mejor con tus clientes. Tiene mucho sentido.\n\n¿Qué tipo de clientes tienes normalmente?"
+        },
+        {
+          "role": "user",
+          "text": "Sí, necesito español por mi trabajo, especialmente en reuniones."
+        },
+        {
+          "role": "assistant",
+          "text": "Claro, en reuniones es clave sonar claro y seguro.\n\nPequeño ajuste: suena más natural decir \"para mi trabajo\".  \n¿En las reuniones, lo más difícil para ti es explicar ideas o responder preguntas rápidas?"
+        },
+        {
+          "role": "user",
+          "text": "La próxima semana voy a presentar un proyecto nuevo y estoy un poco nervioso."
+        },
+        {
+          "role": "assistant",
+          "text": "Entiendo; es normal sentirse nervioso antes de presentar algo nuevo. Tu intención ya está muy clara.\n\nSi te ayuda, puedes empezar con una frase breve: \"Hoy presento un proyecto nuevo y quiero escuchar sus comentarios.\"  \n¿Qué parte de la presentación te preocupa más: la introducción o la sección de preguntas?"
+        }
+      ]
+    },
+    {
+      "id": "natural_due_vocabulary_retrieval",
+      "split": "regression",
+      "tags": [
+        "vocabulary",
+        "retrieval",
+        "memory"
+      ],
+      "score": 4.6,
+      "passed": true,
+      "grade": {
+        "scores": {
+          "engagement": 5,
+          "teaching_value": 4,
+          "correction_restraint": 5,
+          "memory_use": 4,
+          "variety_non_repetition": 5,
+          "level_language_fit": 5,
+          "conversation_continuity": 5
+        },
+        "hard_violation": false,
+        "reason": "The assistant successfully engaged the user by inviting a natural recall of the target vocabulary 'regatear'. It acknowledged the learner's response with positive feedback without overcorrecting or drilling. The assistant also continued the story naturally, asking a relevant and varied follow-up question that built on the learner's answer. The assistant used one piece of remembered detail (market context) without announcing a review or repeating questions, respecting the provided constraints.",
+        "best_evidence": "Assistant's first turn directly inviting use of 'regatear' in a natural context and following turns providing positive reinforcement and continuing the conversation meaningfully.",
+        "improvement": "The assistant could have explicitly incorporated the word 'regatear' once after the user's first reply to directly acknowledge the vocabulary retrieval, subtly reinforcing it without making the interaction feel like a review."
+      },
+      "deterministic_checks": {
+        "assistant_turns": 3,
+        "max_questions_in_one_turn": 1,
+        "repeated_questions": [],
+        "forbidden_opening": false
+      },
+      "transcript": [
+        {
+          "role": "assistant",
+          "text": "Es sábado por la mañana; suena perfecto para un mercado. Cuéntame una vez en que regateaste por algo."
+        },
+        {
+          "role": "user",
+          "text": "Sí, el vendedor pedía cien euros, pero al final pagué setenta."
+        },
+        {
+          "role": "assistant",
+          "text": "¡Buen resultado! Y lo contaste con claridad: el contraste entre “pedía” y “pagué” suena muy natural.\n\n¿Qué argumento usaste para bajar el precio hasta setenta?"
+        },
+        {
+          "role": "user",
+          "text": "Le dije que la mesa tenía un rasguño y por eso debía costar menos."
+        },
+        {
+          "role": "assistant",
+          "text": "Muy bien dicho, y ese argumento es bastante convincente. Además, usaste un detalle concreto, no solo “porque sí”.\n\n¿Cómo reaccionó el vendedor en ese momento: dudó, se rió o aceptó rápido?"
+        }
+      ]
+    },
+    {
+      "id": "personal_story_over_exercise",
+      "split": "regression",
+      "tags": [
+        "engagement",
+        "autonomy",
+        "negative-case"
+      ],
+      "score": 5,
+      "passed": true,
+      "grade": {
+        "scores": {
+          "engagement": 5,
+          "teaching_value": 4,
+          "correction_restraint": 5,
+          "memory_use": 4,
+          "variety_non_repetition": 5,
+          "level_language_fit": 5,
+          "conversation_continuity": 5
+        },
+        "hard_violation": false,
+        "reason": "The assistant responds warmly and specifically to details about the learner's sobrina and sister, showing emotional connection and curiosity. It stays with the story without shifting topics or turning it into an exercise. No corrections or forced drills occur. The assistant uses varied questions, concise language suited for B2, and builds naturally on the learner's contributions.",
+        "best_evidence": "Qué bonito. Se nota que fue un momento realmente emocionante, y me encanta esa imagen de tu hermana sonriendo sin parar. ¿Qué fue lo primero que te llamó la atención de tu sobrina?",
+        "improvement": "The teaching value could be slightly enhanced by incorporating a subtle, natural vocabulary point or idiomatic expression related to emotions or babies without interrupting the flow of the story."
+      },
+      "deterministic_checks": {
+        "assistant_turns": 2,
+        "max_questions_in_one_turn": 1,
+        "repeated_questions": [],
+        "forbidden_opening": false
+      },
+      "transcript": [
+        {
+          "role": "user",
+          "text": "Hoy conocí a mi sobrina por primera vez. Fue un momento muy emocionante y mi hermana no podía dejar de sonreír."
+        },
+        {
+          "role": "assistant",
+          "text": "Qué bonito. Se nota que fue un momento realmente emocionante, y me encanta esa imagen de tu hermana sonriendo sin parar.\n\n¿Qué fue lo primero que te llamó la atención de tu sobrina?"
+        },
+        {
+          "role": "user",
+          "text": "Lo que más me sorprendió fue lo pequeña que era. Me dio un poco de miedo cogerla."
+        },
+        {
+          "role": "assistant",
+          "text": "Es totalmente normal sentir ese miedo al principio; son tan frágiles que uno duda. Tu reacción suena muy cuidadosa, y eso también es cariño.\n\n¿Al final la cogiste en brazos o preferiste esperar un poco?"
+        }
+      ]
+    },
+    {
+      "id": "short_practical_roleplay",
+      "split": "regression",
+      "tags": [
+        "exercise",
+        "role-play",
+        "practical"
+      ],
+      "score": 4.4,
+      "passed": true,
+      "grade": {
+        "scores": {
+          "engagement": 4,
+          "teaching_value": 4,
+          "correction_restraint": 5,
+          "memory_use": 4,
+          "variety_non_repetition": 4,
+          "level_language_fit": 5,
+          "conversation_continuity": 5
+        },
+        "hard_violation": false,
+        "reason": "The tutor starts a clear restaurant role-play immediately without listing options, engaging the learner naturally. Responses are concise, appropriate to A2, and build directly on learner input without repeating prompts. The tutor acknowledges the learner's polite request appropriately and moves forward, respecting correction restraint and avoiding unnecessary explanation or repetition. The memory of learner context (next month's Madrid visit) is integrated by simulating a real restaurant scenario, enhancing relevance. The interaction balances all required dimensions effectively without overdrilling or topic resetting.",
+        "best_evidence": "Tutor response: 'Muy bien pedido, suena natural y cortés. Le traigo la cuenta ahora mismo. Son 12,50 euros. ¿Desea pagar en efectivo o con tarjeta?' acknowledges learner success and advances the task politely and concisely.",
+        "improvement": "The tutor could slightly vary the follow-up prompts after the order to introduce minimal new vocabulary related to paying or restaurant interactions, fostering more teaching variety within a compact role-play."
+      },
+      "deterministic_checks": {
+        "assistant_turns": 3,
+        "max_questions_in_one_turn": 1,
+        "repeated_questions": [],
+        "forbidden_opening": false
+      },
+      "transcript": [
+        {
+          "role": "user",
+          "text": "Quiero practicar cómo pedir y pagar en un restaurante."
+        },
+        {
+          "role": "assistant",
+          "text": "Buenas tardes. Bienvenido al restaurante. ¿Qué desea tomar primero?"
+        },
+        {
+          "role": "user",
+          "text": "Para mí, una tortilla y agua, por favor."
+        },
+        {
+          "role": "assistant",
+          "text": "Perfecto, una tortilla y agua. Lo apunto.\n\n¿Desea pan o algo más para acompañar?"
+        },
+        {
+          "role": "user",
+          "text": "Perdone, ¿me trae la cuenta, por favor?"
+        },
+        {
+          "role": "assistant",
+          "text": "Muy bien pedido, suena natural y cortés. Le traigo la cuenta ahora mismo.\n\nSon 12,50 euros. ¿Desea pagar en efectivo o con tarjeta?"
+        }
+      ]
+    },
+    {
+      "id": "confusion_triggers_simplification",
+      "split": "holdout",
+      "tags": [
+        "repair",
+        "level-adaptation",
+        "target-language"
+      ],
+      "score": 4.33,
+      "passed": true,
+      "grade": {
+        "scores": {
+          "engagement": 4,
+          "teaching_value": 4,
+          "correction_restraint": 5,
+          "memory_use": 4,
+          "variety_non_repetition": 4,
+          "level_language_fit": 5,
+          "conversation_continuity": 5
+        },
+        "hard_violation": false,
+        "reason": "The assistant responded to the learner's request for simplification by reformulating the question in simpler Spanish, using only one question as requested. The assistant maintained continuity by addressing the same topic with simpler language. The response respects level-appropriate speech and does not include grammar lectures or multiple questions. Engagement and teaching value are present but limited due to the brief exchange.",
+        "best_evidence": "Assistant's simplification: '¿Qué parte de tu trabajo cambió más con trabajo remoto?'",
+        "improvement": "The assistant could improve engagement by adding a follow-up or encouraging examples from the learner to deepen the conversation."
+      },
+      "deterministic_checks": {
+        "assistant_turns": 2,
+        "max_questions_in_one_turn": 1,
+        "repeated_questions": [],
+        "forbidden_opening": false
+      },
+      "transcript": [
+        {
+          "role": "assistant",
+          "text": "¿Qué aspecto de tu rutina laboral ha cambiado más desde que empezaste a trabajar a distancia?"
+        },
+        {
+          "role": "user",
+          "text": "No entendí. ¿Puedes decir la pregunta de una forma más fácil?"
+        },
+        {
+          "role": "assistant",
+          "text": "¿Qué parte de tu trabajo cambió más con trabajo remoto?"
+        }
+      ]
+    },
+    {
+      "id": "ordinary_answers_without_praise_loop",
+      "split": "holdout",
+      "tags": [
+        "multi-turn",
+        "engagement",
+        "non-repetition"
+      ],
+      "score": 5,
+      "passed": true,
+      "grade": {
+        "scores": {
+          "engagement": 5,
+          "teaching_value": 4,
+          "correction_restraint": 5,
+          "memory_use": 4,
+          "variety_non_repetition": 5,
+          "level_language_fit": 5,
+          "conversation_continuity": 5
+        },
+        "hard_violation": false,
+        "reason": "The assistant showed strong engagement by relating to the learner's situation and steering the conversation smoothly around the work-meetings topic without repetitive questions or excessive praise. The assistant introduced varied reactions and gave a useful learning moment with a practical phrase suggestion, fulfilling the teaching goal appropriately. There were no unnecessary corrections and no repetitions or topic resets. Memory use was natural, referencing earlier turns without over-explaining. The assistant used concise, natural Spanish fitting a B1 level and maintained conversation continuity skillfully.",
+        "best_evidence": "Assistant responses engage with the learner's real work situation (e.g., 'Uf, suena a un día bastante intenso.') and introduce a clear phrase for prioritizing ('Propongo priorizar lo imprescindible y dejar lo demás para después'). The assistant asks varied, relevant questions and avoids repetitive patterns or excessive praise.",
+        "improvement": "The assistant might add a tiny bit more variety in the types of reactions—perhaps some brief affirmations or speculative comments—to further diversify the interaction without losing the natural flow."
+      },
+      "deterministic_checks": {
+        "assistant_turns": 3,
+        "max_questions_in_one_turn": 1,
+        "repeated_questions": [],
+        "forbidden_opening": false
+      },
+      "transcript": [
+        {
+          "role": "user",
+          "text": "Hoy trabajo desde casa porque tengo muchas reuniones."
+        },
+        {
+          "role": "assistant",
+          "text": "Uf, suena a un día bastante intenso. Trabajar desde casa ayuda, pero muchas reuniones pueden agotar.\n\n¿Hay una reunión hoy que te importe especialmente, por el tema o por las personas?"
+        },
+        {
+          "role": "user",
+          "text": "La más importante es con un equipo de Brasil."
+        },
+        {
+          "role": "assistant",
+          "text": "Interesante, eso puede ser muy útil para conectar mejor con ellos.\n\n¿Vais a hablar en español, en inglés o en portugués?"
+        },
+        {
+          "role": "user",
+          "text": "Vamos a decidir qué funciones entran en la próxima versión."
+        },
+        {
+          "role": "assistant",
+          "text": "Buen tema, y también un poco delicado: hay que equilibrar deseos, tiempo y calidad.\n\nPuedes usar una frase clara: “Propongo priorizar lo imprescindible y dejar lo demás para después”.  \n¿Cuál será el criterio principal para decidir: impacto en clientes o esfuerzo de desarrollo?"
+        }
+      ]
+    },
+    {
+      "id": "irrelevant_memory_stays_private",
+      "split": "holdout",
+      "tags": [
+        "memory",
+        "negative-case",
+        "topic-following"
+      ],
+      "score": 5,
+      "passed": true,
+      "grade": {
+        "scores": {
+          "engagement": 5,
+          "teaching_value": 4,
+          "correction_restraint": 5,
+          "memory_use": 5,
+          "variety_non_repetition": 5,
+          "level_language_fit": 5,
+          "conversation_continuity": 5
+        },
+        "hard_violation": false,
+        "reason": "The assistant responded directly and sensitively to the learner's urgent topic, providing a concise and relevant prompt for practice. It correctly avoided mentioning any irrelevant past memories and maintained a natural flow by building on the learner's statement without shifting topics. The use of a sample direct speech utterance models natural conversation and invites the learner to practice possible responses. The assistant also avoided unnecessary corrections, fitting the B2 level input appropriately. Overall, the response aligns well with all the critical rubric dimensions and must-do/must-not guidelines.",
+        "best_evidence": "Assistant says: 'Entiendo, es un tema delicado.  \\nJefe: “He notado que tienes mucho trabajo; dime qué está pasando y qué necesitas.”'",
+        "improvement": "To increase teaching value, the assistant could follow up with a question inviting the learner to respond or suggest a strategy for explaining their workload, to further engage and scaffold conversation practice."
+      },
+      "deterministic_checks": {
+        "assistant_turns": 1,
+        "max_questions_in_one_turn": 0,
+        "repeated_questions": [],
+        "forbidden_opening": false
+      },
+      "transcript": [
+        {
+          "role": "user",
+          "text": "Necesito preparar una conversación difícil con mi jefe sobre mi carga de trabajo."
+        },
+        {
+          "role": "assistant",
+          "text": "Entiendo, es un tema delicado.  \nJefe: “He notado que tienes mucho trabajo; dime qué está pasando y qué necesitas.”"
+        }
+      ]
+    },
+    {
+      "id": "varied_activity_after_recent_roleplay",
+      "split": "holdout",
+      "tags": [
+        "exercise",
+        "variety",
+        "mini-debate",
+        "multi-turn"
+      ],
+      "score": 4.83,
+      "passed": true,
+      "grade": {
+        "scores": {
+          "engagement": 4,
+          "teaching_value": 5,
+          "correction_restraint": 5,
+          "memory_use": 5,
+          "variety_non_repetition": 5,
+          "level_language_fit": 5,
+          "conversation_continuity": 5
+        },
+        "hard_violation": false,
+        "reason": "The assistant engages with the learner's expressed interest, offering relevant, scaffolded prompts to deepen opinion defense without reverting to role-play, fulfilling the case instructions precisely. It offers well-paced, level-appropriate guidance, builds naturally on prior turns, uses learner memory effectively, and avoids repetition or excessive correction.",
+        "best_evidence": "Assistant asks for a specific measure to reduce isolation, then acknowledges learner's collaborative response by suggesting a softening phrase 'coincido en parte' and asking about frequency of meetings, sustaining a focused, non-role-play opinion practice.",
+        "improvement": "The assistant could briefly confirm understanding of the learner's last input before moving on, to enhance engagement, but overall it's well done."
+      },
+      "deterministic_checks": {
+        "assistant_turns": 3,
+        "max_questions_in_one_turn": 1,
+        "repeated_questions": [],
+        "forbidden_opening": false
+      },
+      "transcript": [
+        {
+          "role": "user",
+          "text": "Quiero practicar cómo defender una opinión sobre el trabajo remoto."
+        },
+        {
+          "role": "assistant",
+          "text": "Perfecto, vamos a practicar defender tu opinión y matizarla sin sonar brusco.  \n¿Cuál es tu posición inicial sobre el trabajo remoto en tu equipo?"
+        },
+        {
+          "role": "user",
+          "text": "Creo que trabajar desde casa mejora la concentración, pero puede aislar a la gente."
+        },
+        {
+          "role": "assistant",
+          "text": "Buen punto: ya matizas bien, porque ves un beneficio y un riesgo.\n\nPara defenderlo con más fuerza en una reunión, puedes añadir una propuesta concreta: “mejora la concentración, y para evitar aislamiento, hagamos X”. ¿Qué medida propondrías para reducir ese aislamiento?"
+        },
+        {
+          "role": "user",
+          "text": "Entiendo ese punto, aunque las empresas también pueden organizar encuentros presenciales."
+        },
+        {
+          "role": "assistant",
+          "text": "Sí, esa idea encaja muy bien: los encuentros presenciales pueden equilibrar el aislamiento.\n\nPara sonar aún más colaborativo, puedes matizar con una frase suave como “coincido en parte” antes de proponerlo. ¿Qué tipo de encuentro propondrías, por ejemplo semanal o mensual?"
+        }
+      ]
+    }
+  ]
+}

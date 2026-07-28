@@ -1,6 +1,7 @@
 package com.xemniz.langcoach.domain.reflection
 
 import com.xemniz.langcoach.core.AppResult
+import com.xemniz.langcoach.domain.session.SessionPlan
 
 interface ReflectionService {
     suspend fun reflect(
@@ -8,8 +9,8 @@ interface ReflectionService {
         nativeLang: String,
         level: String,
         recentVocab: List<String>,
-        userTranscript: String,
-        assistantTranscript: String,
+        transcript: SessionTranscript,
+        sessionPlan: SessionPlan?,
         allowedCategoryCodes: List<String>,
     ): AppResult<ReflectionResult>
 
@@ -17,8 +18,7 @@ interface ReflectionService {
         targetLang: String,
         nativeLang: String,
         previousModel: String?,
-        userTranscript: String,
-        assistantTranscript: String,
+        transcript: SessionTranscript,
         sessionSummary: String,
     ): AppResult<UserModelUpdate>
 }

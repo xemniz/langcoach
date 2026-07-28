@@ -5,13 +5,19 @@ import com.xemniz.langcoach.domain.reflection.ReflectedError
 import com.xemniz.langcoach.domain.reflection.ReflectedVocab
 import com.xemniz.langcoach.domain.reflection.ReflectionResult
 import com.xemniz.langcoach.domain.reflection.ReflectionService
+import com.xemniz.langcoach.domain.reflection.SessionTranscript
 import com.xemniz.langcoach.domain.reflection.UserModelUpdate
+import com.xemniz.langcoach.domain.session.ObjectiveEvaluation
+import com.xemniz.langcoach.domain.session.ObjectiveOutcome
+import com.xemniz.langcoach.domain.session.SessionPlan
 import com.xemniz.langcoach.llm.chat.ChatCompletionsClient
 import com.xemniz.langcoach.llm.chat.ErrorClassificationResult
+import com.xemniz.langcoach.llm.chat.ObjectiveEvaluationResult
 import com.xemniz.langcoach.llm.chat.SessionSummaryResult
 import com.xemniz.langcoach.llm.chat.UserModelResult
 import com.xemniz.langcoach.llm.chat.VocabExtractionResult
 import com.xemniz.langcoach.llm.chat.errorClassificationSchema
+import com.xemniz.langcoach.llm.chat.objectiveEvaluationSchema
 import com.xemniz.langcoach.llm.chat.summarySchema
 import com.xemniz.langcoach.llm.chat.userModelSchema
 import com.xemniz.langcoach.llm.chat.vocabExtractionSchema
@@ -25,16 +31,11 @@ class ReflectionServiceImpl(
         nativeLang: String,
         level: String,
         recentVocab: List<String>,
-        userTranscript: String,
-        assistantTranscript: String,
+        transcript: SessionTranscript,
+        sessionPlan: SessionPlan?,
         allowedCategoryCodes: List<String>,
     ): AppResult<ReflectionResult> {
-        val transcript = buildString {
-            append("USER (in ").append(targetLang).append("):\n")
-            append(userTranscript.ifBlank { "(no speech detected)" })
-            append("\n\nTUTOR:\n")
-            append(assistantTranscript.ifBlank { "(no response)" })
-        }
+        val renderedTranscript = transcript.render().ifBlank { "(no conversation captured)" }
 
         val recentVocabList = if (recentVocab.isEmpty()) "(none)" else recentVocab.joinToString(", ")
 
@@ -42,7 +43,7 @@ class ReflectionServiceImpl(
 
         val vocabResult = chat.structured(
             systemPrompt = vocabSystemPrompt,
-            userPrompt = "Native language: $nativeLang. Target language: $targetLang.\n\nTranscript:\n$transcript",
+            userPrompt = "Native language: $nativeLang. Target language: $targetLang.\n\nTranscript:\n$renderedTranscript",
             schemaName = "vocab_extraction",
             schema = vocabExtractionSchema(),
             deserializer = VocabExtractionResult.serializer(),
@@ -54,7 +55,7 @@ class ReflectionServiceImpl(
 
         val errorResult = chat.structured(
             systemPrompt = "You classify mistakes the user made in their $targetLang. For each, pick the closest category from the provided list. Only include genuine errors, not stylistic variation. Output an empty array if none.",
-            userPrompt = "Native language: $nativeLang. Target language: $targetLang.\n\nAllowed category codes: ${allowedCategoryCodes.joinToString()}\n\nTranscript:\n$transcript",
+            userPrompt = "Native language: $nativeLang. Target language: $targetLang.\n\nAllowed category codes: ${allowedCategoryCodes.joinToString()}\n\nTranscript:\n$renderedTranscript",
             schemaName = "error_classification",
             schema = errorClassificationSchema(allowedCategoryCodes),
             deserializer = ErrorClassificationResult.serializer(),
@@ -66,7 +67,7 @@ class ReflectionServiceImpl(
 
         val summaryResult = chat.structured(
             systemPrompt = "You write short, plain-language session summaries for a language learner. About 60 to 100 words, third person, no markdown, no quotes. Mention topic, level of fluency observed, and one or two things to focus on next time.",
-            userPrompt = "Native language: $nativeLang. Target language: $targetLang.\n\nTranscript:\n$transcript",
+            userPrompt = "Native language: $nativeLang. Target language: $targetLang.\n\nTranscript:\n$renderedTranscript",
             schemaName = "session_summary",
             schema = summarySchema(),
             deserializer = SessionSummaryResult.serializer(),
@@ -76,14 +77,69 @@ class ReflectionServiceImpl(
             is AppResult.Success -> summaryResult.value
         }
 
-        val tokensIn = vocab.tokensIn + errors.tokensIn + summary.tokensIn
-        val tokensOut = vocab.tokensOut + errors.tokensOut + summary.tokensOut
+        val objectiveResult = sessionPlan?.let { plan ->
+            chat.structured(
+                systemPrompt = """
+                    You evaluate one language-learning objective from an ordered tutoring transcript.
+                    Judge only evidence in learner turns. Never infer mastery from the tutor's words.
+
+                    Outcome rules:
+                    - NotObserved: the transcript contains no clear attempt at the planned target, or
+                      the relevant audio/transcript is too uncertain to judge.
+                    - Attempted: the learner clearly attempts the target but does not demonstrate it
+                      accurately.
+                    - AchievedWithHelp: the learner succeeds after a direct answer, model, correction,
+                      sentence completion, or explicit form in the immediately preceding tutor turn.
+                    - AchievedIndependently: the learner accurately produces the target for a genuine
+                      communicative purpose without copying a tutor-supplied answer.
+
+                    For NotObserved, evidenceTurnId and evidenceText must be null. Otherwise cite one
+                    exact learner turn ID and a short exact quote. Confidence measures confidence in
+                    this classification, not learner ability.
+                """.trimIndent(),
+                userPrompt = """
+                    Target language: $targetLang
+                    Objective kind: ${plan.kind.name}
+                    Objective: ${plan.objective}
+                    Target: ${plan.target ?: "(none)"}
+                    Success criteria: ${plan.successCriteria}
+
+                    Ordered transcript:
+                    $renderedTranscript
+                """.trimIndent(),
+                schemaName = "objective_evaluation",
+                schema = objectiveEvaluationSchema(),
+                deserializer = ObjectiveEvaluationResult.serializer(),
+            )
+        }
+        val objectiveEvaluation = when (objectiveResult) {
+            is AppResult.Success -> {
+                val value = objectiveResult.value.value
+                ObjectiveOutcome.entries
+                    .firstOrNull { it.name == value.outcome }
+                    ?.let { outcome ->
+                        ObjectiveEvaluation(
+                            outcome = outcome,
+                            evidenceTurnId = value.evidenceTurnId,
+                            evidenceText = value.evidenceText,
+                            confidence = value.confidence.coerceIn(0.0, 1.0),
+                        )
+                    }
+            }
+            else -> null
+        }
+
+        val objectiveTokensIn = (objectiveResult as? AppResult.Success)?.value?.tokensIn ?: 0
+        val objectiveTokensOut = (objectiveResult as? AppResult.Success)?.value?.tokensOut ?: 0
+        val tokensIn = vocab.tokensIn + errors.tokensIn + summary.tokensIn + objectiveTokensIn
+        val tokensOut = vocab.tokensOut + errors.tokensOut + summary.tokensOut + objectiveTokensOut
 
         return AppResult.Success(
             ReflectionResult(
                 newVocab = vocab.value.items.map { ReflectedVocab(it.word, it.lemma, it.context, it.source) },
                 errors = errors.value.items.map { ReflectedError(it.categoryCode, it.originalText, it.correctedText) },
                 summary = summary.value.summary,
+                objectiveEvaluation = objectiveEvaluation,
                 tokensIn = tokensIn,
                 tokensOut = tokensOut,
             )
@@ -94,16 +150,10 @@ class ReflectionServiceImpl(
         targetLang: String,
         nativeLang: String,
         previousModel: String?,
-        userTranscript: String,
-        assistantTranscript: String,
+        transcript: SessionTranscript,
         sessionSummary: String,
     ): AppResult<UserModelUpdate> {
-        val transcript = buildString {
-            append("USER (in ").append(targetLang).append("):\n")
-            append(userTranscript.ifBlank { "(no speech detected)" })
-            append("\n\nTUTOR:\n")
-            append(assistantTranscript.ifBlank { "(no response)" })
-        }
+        val renderedTranscript = transcript.render().ifBlank { "(no conversation captured)" }
 
         val systemPrompt = "You maintain a single freeform-text doc representing what a language tutor knows about a learner. Given the previous version of this doc, the most recent session transcript, and the session summary, produce an updated version. Keep what is still true. Update what changed. Add what is genuinely new (interests, personal facts the learner stated about themselves, comfort levels with grammar areas, unfinished conversation threads). Drop anything that seems stale or contradicted. Maximum 500 words. Plain prose, no headers, no markdown, no bullet lists. Third person, written for the tutor as a private memory aid. Be conservative — only state things the learner actually revealed, not inferences."
 
@@ -114,7 +164,7 @@ class ReflectionServiceImpl(
             append("\n\nSession summary:\n")
             append(sessionSummary.ifBlank { "(no summary)" })
             append("\n\nTranscript:\n")
-            append(transcript)
+            append(renderedTranscript)
         }
 
         val result = chat.structured(

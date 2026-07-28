@@ -26,7 +26,6 @@ class OpenAIRealtimeClient(
                 url("wss://api.openai.com/v1/realtime?model=$model")
                 headers {
                     append(HttpHeaders.Authorization, "Bearer $key")
-                    append("OpenAI-Beta", "realtime=v1")
                 }
             }
         }
@@ -42,6 +41,6 @@ class OpenAIRealtimeClient(
     }
 
     companion object {
-        const val DEFAULT_MODEL = "gpt-4o-realtime-preview-2024-12-17"
+        const val DEFAULT_MODEL = "gpt-realtime-2.1"
     }
 }

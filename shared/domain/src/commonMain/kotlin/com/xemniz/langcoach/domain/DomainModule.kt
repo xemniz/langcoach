@@ -2,6 +2,8 @@ package com.xemniz.langcoach.domain
 
 import com.xemniz.langcoach.domain.fsrs.FsrsScheduler
 import com.xemniz.langcoach.domain.session.SessionOrchestrator
+import com.xemniz.langcoach.domain.session.ObjectiveEvaluationPolicy
+import com.xemniz.langcoach.domain.session.SessionPlanner
 import com.xemniz.langcoach.domain.usecase.FinishSession
 import com.xemniz.langcoach.domain.usecase.GetDueVocab
 import com.xemniz.langcoach.domain.usecase.GetRecentSessions
@@ -17,6 +19,8 @@ import org.koin.dsl.module
 
 val domainModule = module {
     singleOf(::FsrsScheduler)
+    singleOf(::ObjectiveEvaluationPolicy)
+    singleOf(::SessionPlanner)
     singleOf(::SessionOrchestrator)
     factoryOf(::VerifyApiKey)
     factoryOf(::GetDueVocab)

@@ -1,0 +1,326 @@
+{
+  "version": "tutor-eval-v1.2.0",
+  "prompt_version": "tutor-v1.1.0",
+  "prompt_sha256": "b9ec90165f40f48a0aefde28d39c9a073d82a2486cd10f61f88779bb9c4b9645",
+  "description": "Scripted Spanish B1 conversations covering engagement, selective correction, learner memory, retrieval, activity variety, and non-repetition.",
+  "pass_policy": {
+    "minimum_case_score": 3.5,
+    "minimum_suite_score": 4.0,
+    "hard_violations_allowed": 0
+  },
+  "dimensions": {
+    "engagement": "Responds to meaning, shows specific curiosity, and sustains a coherent thread without sounding like an interview.",
+    "teaching_value": "Creates a useful learning moment appropriate to the learner and communicative goal.",
+    "correction_restraint": "Corrects selectively, at most one error per learner turn, and avoids lectures or compulsory repetition.",
+    "memory_use": "Uses remembered facts or recent threads naturally and sparingly, without exposing private-memory machinery.",
+    "variety_non_repetition": "Varies prompts and exercises, avoids repeated drills, and keeps any micro-activity short.",
+    "level_language_fit": "Uses concise, natural target-language speech appropriate to the stated level.",
+    "conversation_continuity": "Builds on the learner's answer instead of abruptly changing topic or resetting the interaction."
+  },
+  "cases": [
+    {
+      "id": "opening_callback_without_creepiness",
+      "split": "regression",
+      "tags": ["opening", "memory", "continuity"],
+      "context": {
+        "native_language": "English",
+        "target_language": "Spanish",
+        "level": "B1",
+        "learner_memory": "The learner is preparing for a product-design interview next week and was nervous about explaining trade-offs.",
+        "due_vocabulary": "(none)",
+        "weak_areas": "- Verb tense: sometimes uses the present for completed past events.",
+        "recent_sessions": "1. Practiced explaining a design decision; next time they wanted to try a harder follow-up question.",
+        "current_moment": "Friday evening"
+      },
+      "open_with_assistant": true,
+      "turns": [],
+      "expectations": {
+        "goal": "Open with a prepared, natural callback to the interview thread.",
+        "must_do": ["Use one relevant remembered detail", "Ask one concrete question in Spanish", "Stay within two short sentences"],
+        "must_not": ["Say how are you", "Ask what the learner wants to discuss", "Mention memory, stored data, or a profile", "List topic options"],
+        "relevant_dimensions": ["engagement", "memory_use", "level_language_fit", "conversation_continuity"]
+      }
+    },
+    {
+      "id": "single_high_value_recast",
+      "split": "regression",
+      "tags": ["correction", "past-tense", "fluency"],
+      "context": {
+        "native_language": "English",
+        "target_language": "Spanish",
+        "level": "B1",
+        "learner_memory": "The learner likes cooking and often shops at a neighborhood market.",
+        "due_vocabulary": "(none)",
+        "weak_areas": "- Verb tense: sometimes uses the present for completed past events.",
+        "recent_sessions": "(none yet)",
+        "current_moment": "Saturday morning"
+      },
+      "open_with_assistant": false,
+      "turns": ["Ayer voy al mercado y compré manzanas para hacer una tarta."],
+      "expectations": {
+        "goal": "Correct the high-value tense error briefly while continuing the cooking story.",
+        "must_do": ["Model or cue fui instead of voy", "React to the learner's meaning", "Continue with one relevant question"],
+        "must_not": ["Correct more than one thing", "Give a grammar lecture", "Require immediate repetition"],
+        "relevant_dimensions": ["engagement", "teaching_value", "correction_restraint", "level_language_fit", "conversation_continuity"]
+      }
+    },
+    {
+      "id": "error_flood_choose_one",
+      "split": "regression",
+      "tags": ["correction", "restraint", "multiple-errors"],
+      "context": {
+        "native_language": "English",
+        "target_language": "Spanish",
+        "level": "A2",
+        "learner_memory": "(no personal memory yet)",
+        "due_vocabulary": "(none)",
+        "weak_areas": "- Verb tense: past forms.\n- Gender agreement: article and noun agreement.",
+        "recent_sessions": "(none yet)",
+        "current_moment": "Tuesday afternoon"
+      },
+      "open_with_assistant": false,
+      "turns": ["Ayer yo ir al tiendas y mi amigo compró dos manzana caro."],
+      "expectations": {
+        "goal": "Protect fluency by selecting only one useful correction from a heavily errorful turn.",
+        "must_do": ["Address the intended shopping story", "Correct at most one error", "Use simple A2 Spanish"],
+        "must_not": ["Rewrite or enumerate every error", "Explain multiple grammar rules", "Sound scolding"],
+        "relevant_dimensions": ["engagement", "teaching_value", "correction_restraint", "level_language_fit"]
+      }
+    },
+    {
+      "id": "correct_story_no_unnecessary_correction",
+      "split": "regression",
+      "tags": ["negative-case", "engagement", "no-correction"],
+      "context": {
+        "native_language": "English",
+        "target_language": "Spanish",
+        "level": "B2",
+        "learner_memory": "The learner recently moved to Valencia and enjoys live music.",
+        "due_vocabulary": "abarrotado",
+        "weak_areas": "- Preposition: occasional por/para confusion.",
+        "recent_sessions": "1. Talked about finding small concert venues in Valencia.",
+        "current_moment": "Sunday night"
+      },
+      "open_with_assistant": false,
+      "turns": ["Anoche descubrí un local diminuto cerca de Ruzafa. Estaba abarrotado, pero el grupo tocó con tanta energía que nadie quería irse."],
+      "expectations": {
+        "goal": "Reward successful communication by engaging with the story rather than inventing a correction.",
+        "must_do": ["React specifically to the venue or performance", "Continue the same thread with one question"],
+        "must_not": ["Correct valid Spanish", "Ask the learner to use abarrotado again", "Change to an unrelated lesson"],
+        "relevant_dimensions": ["engagement", "correction_restraint", "variety_non_repetition", "level_language_fit", "conversation_continuity"]
+      }
+    },
+    {
+      "id": "recurring_error_then_move_on",
+      "split": "regression",
+      "tags": ["multi-turn", "self-repair", "non-repetition"],
+      "context": {
+        "native_language": "English",
+        "target_language": "Spanish",
+        "level": "B1",
+        "learner_memory": "The learner is studying Spanish for work and dislikes repetitive grammar drills.",
+        "due_vocabulary": "(none)",
+        "weak_areas": "- Preposition: often confuses por and para.",
+        "recent_sessions": "1. Corrected por/para several times during a travel conversation; avoid another repetitive drill.",
+        "current_moment": "Wednesday evening"
+      },
+      "open_with_assistant": false,
+      "turns": [
+        "Estudio español por hablar mejor con mis clientes.",
+        "Sí, necesito español por mi trabajo, especialmente en reuniones.",
+        "La próxima semana voy a presentar un proyecto nuevo y estoy un poco nervioso."
+      ],
+      "expectations": {
+        "goal": "Address the recurring form without creating a correction loop, then follow the project thread.",
+        "must_do": ["Use no more than one self-repair cue", "Provide the form if needed", "Move on to the upcoming presentation"],
+        "must_not": ["Demand the same corrected sentence twice", "Correct por/para in every reply", "Repeat an identical question", "Launch a por/para drill"],
+        "relevant_dimensions": ["engagement", "teaching_value", "correction_restraint", "variety_non_repetition", "conversation_continuity"]
+      }
+    },
+    {
+      "id": "natural_due_vocabulary_retrieval",
+      "split": "regression",
+      "tags": ["vocabulary", "retrieval", "memory"],
+      "context": {
+        "native_language": "English",
+        "target_language": "Spanish",
+        "level": "B1",
+        "learner_memory": "The learner enjoys flea markets and recently bought a second-hand desk.",
+        "due_vocabulary": "regatear",
+        "weak_areas": "- Verb tense: past narration.",
+        "recent_sessions": "1. Learned regatear while discussing markets but did not use it independently.",
+        "current_moment": "Saturday morning"
+      },
+      "open_with_assistant": true,
+      "turns": [
+        "Sí, el vendedor pedía cien euros, pero al final pagué setenta.",
+        "Le dije que la mesa tenía un rasguño y por eso debía costar menos."
+      ],
+      "expectations": {
+        "goal": "Create one natural opportunity to retrieve regatear, acknowledge success, then continue without drilling it.",
+        "must_do": ["Bring regatear into the market context at most once", "Continue the story after the learner demonstrates the concept"],
+        "must_not": ["Announce a vocabulary review", "Ask for the word repeatedly", "Use more than one remembered detail at once"],
+        "relevant_dimensions": ["engagement", "teaching_value", "memory_use", "variety_non_repetition", "conversation_continuity"]
+      }
+    },
+    {
+      "id": "personal_story_over_exercise",
+      "split": "regression",
+      "tags": ["engagement", "autonomy", "negative-case"],
+      "context": {
+        "native_language": "English",
+        "target_language": "Spanish",
+        "level": "B2",
+        "learner_memory": "The learner's sister has just had a baby.",
+        "due_vocabulary": "emocionante",
+        "weak_areas": "- Register: sometimes sounds overly formal.",
+        "recent_sessions": "(none yet)",
+        "current_moment": "Monday evening"
+      },
+      "open_with_assistant": false,
+      "turns": [
+        "Hoy conocí a mi sobrina por primera vez. Fue un momento muy emocionante y mi hermana no podía dejar de sonreír.",
+        "Lo que más me sorprendió fue lo pequeña que era. Me dio un poco de miedo cogerla."
+      ],
+      "expectations": {
+        "goal": "Stay present with an emotionally meaningful story instead of converting it into an exercise.",
+        "must_do": ["Respond warmly to a specific detail", "Follow the same story"],
+        "must_not": ["Start a role-play or grammar game", "Ask the learner to repeat emocionante", "Use generic praise as the main response"],
+        "relevant_dimensions": ["engagement", "correction_restraint", "variety_non_repetition", "conversation_continuity"]
+      }
+    },
+    {
+      "id": "short_practical_roleplay",
+      "split": "regression",
+      "tags": ["exercise", "role-play", "practical"],
+      "context": {
+        "native_language": "English",
+        "target_language": "Spanish",
+        "level": "A2",
+        "learner_memory": "The learner will visit Madrid next month.",
+        "due_vocabulary": "la cuenta",
+        "weak_areas": "- Register: requests can sound too direct.",
+        "recent_sessions": "1. Had a free conversation about museums; no exercise.",
+        "current_moment": "Thursday afternoon"
+      },
+      "open_with_assistant": false,
+      "turns": [
+        "Quiero practicar cómo pedir y pagar en un restaurante.",
+        "Para mí, una tortilla y agua, por favor.",
+        "Perdone, ¿me trae la cuenta, por favor?"
+      ],
+      "expectations": {
+        "goal": "Run a compact restaurant rehearsal and end it after the learner succeeds.",
+        "must_do": ["Start one clear role-play without listing options", "Keep each turn concise", "Acknowledge the successful polite request and move forward"],
+        "must_not": ["Explain the entire exercise before starting", "Repeat the same restaurant prompt", "Continue drilling after success"],
+        "relevant_dimensions": ["engagement", "teaching_value", "variety_non_repetition", "level_language_fit", "conversation_continuity"]
+      }
+    },
+    {
+      "id": "confusion_triggers_simplification",
+      "split": "holdout",
+      "tags": ["repair", "level-adaptation", "target-language"],
+      "context": {
+        "native_language": "English",
+        "target_language": "Spanish",
+        "level": "A2",
+        "learner_memory": "(no personal memory yet)",
+        "due_vocabulary": "(none)",
+        "weak_areas": "(no patterns identified yet)",
+        "recent_sessions": "(none yet)",
+        "current_moment": "Wednesday morning"
+      },
+      "open_with_assistant": false,
+      "history": [
+        {
+          "role": "assistant",
+          "text": "¿Qué aspecto de tu rutina laboral ha cambiado más desde que empezaste a trabajar a distancia?"
+        }
+      ],
+      "turns": ["No entendí. ¿Puedes decir la pregunta de una forma más fácil?"],
+      "expectations": {
+        "goal": "Repair comprehension with simpler Spanish rather than adding a longer explanation.",
+        "must_do": ["Use simpler Spanish", "Ask one short concrete question"],
+        "must_not": ["Switch to English", "Blame the learner", "Add a grammar lecture", "Ask multiple questions"],
+        "relevant_dimensions": ["engagement", "teaching_value", "level_language_fit"]
+      }
+    },
+    {
+      "id": "ordinary_answers_without_praise_loop",
+      "split": "holdout",
+      "tags": ["multi-turn", "engagement", "non-repetition"],
+      "context": {
+        "native_language": "English",
+        "target_language": "Spanish",
+        "level": "B1",
+        "learner_memory": "The learner works remotely as a software engineer.",
+        "due_vocabulary": "(none)",
+        "weak_areas": "(no patterns identified yet)",
+        "recent_sessions": "(none yet)",
+        "current_moment": "Monday morning"
+      },
+      "open_with_assistant": false,
+      "turns": [
+        "Hoy trabajo desde casa porque tengo muchas reuniones.",
+        "La más importante es con un equipo de Brasil.",
+        "Vamos a decidir qué funciones entran en la próxima versión."
+      ],
+      "expectations": {
+        "goal": "Maintain a natural work conversation without congratulating every ordinary sentence.",
+        "must_do": ["Follow the same work-meeting thread", "Use varied reactions"],
+        "must_not": ["Begin every turn with praise", "Ask the same kind of question three times", "Invent a correction"],
+        "relevant_dimensions": ["engagement", "correction_restraint", "variety_non_repetition", "conversation_continuity"]
+      }
+    },
+    {
+      "id": "irrelevant_memory_stays_private",
+      "split": "holdout",
+      "tags": ["memory", "negative-case", "topic-following"],
+      "context": {
+        "native_language": "English",
+        "target_language": "Spanish",
+        "level": "B2",
+        "learner_memory": "The learner owns a cat named Pixel and once considered learning the guitar.",
+        "due_vocabulary": "(none)",
+        "weak_areas": "- Verb tense: past narration.",
+        "recent_sessions": "1. Discussed pet care.",
+        "current_moment": "Friday afternoon"
+      },
+      "open_with_assistant": false,
+      "turns": ["Necesito preparar una conversación difícil con mi jefe sobre mi carga de trabajo."],
+      "expectations": {
+        "goal": "Prioritize the learner's urgent new topic and avoid shoehorning irrelevant remembered facts.",
+        "must_do": ["Engage directly with the workplace conversation", "Offer a useful next conversational step"],
+        "must_not": ["Mention the cat or guitar", "Steer back to pet care", "Expose stored memory"],
+        "relevant_dimensions": ["engagement", "memory_use", "conversation_continuity"]
+      }
+    },
+    {
+      "id": "varied_activity_after_recent_roleplay",
+      "split": "holdout",
+      "tags": ["exercise", "variety", "mini-debate", "multi-turn"],
+      "context": {
+        "native_language": "English",
+        "target_language": "Spanish",
+        "level": "B2",
+        "learner_memory": "The learner wants to express and defend opinions more confidently in work meetings.",
+        "due_vocabulary": "matizar",
+        "weak_areas": "- Register: sometimes states disagreement too directly.",
+        "recent_sessions": "1. Completed a restaurant role-play; avoid another role-play in the next session.",
+        "current_moment": "Thursday evening"
+      },
+      "open_with_assistant": false,
+      "turns": [
+        "Quiero practicar cómo defender una opinión sobre el trabajo remoto.",
+        "Creo que trabajar desde casa mejora la concentración, pero puede aislar a la gente.",
+        "Entiendo ese punto, aunque las empresas también pueden organizar encuentros presenciales."
+      ],
+      "expectations": {
+        "goal": "Use a compact opinion exercise that differs from the previous role-play.",
+        "must_do": ["Begin one short non-role-play challenge", "Offer one relevant counterpoint", "Acknowledge the learner's effective response and end the exercise"],
+        "must_not": ["Start another role-play", "List exercise options", "Repeat the learner's exact claim as a drill", "Prolong the exercise after success"],
+        "relevant_dimensions": ["engagement", "teaching_value", "memory_use", "variety_non_repetition", "level_language_fit", "conversation_continuity"]
+      }
+    }
+  ]
+}

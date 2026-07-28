@@ -57,6 +57,10 @@ kotlin {
             implementation(libs.koin.android)
             implementation(libs.androidx.activity.compose)
         }
+
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
     }
 }
 

@@ -1,9 +1,12 @@
 package com.xemniz.langcoach.domain.reflection
 
+import com.xemniz.langcoach.domain.session.ObjectiveEvaluation
+
 data class ReflectionResult(
     val newVocab: List<ReflectedVocab>,
     val errors: List<ReflectedError>,
     val summary: String,
+    val objectiveEvaluation: ObjectiveEvaluation?,
     val tokensIn: Int,
     val tokensOut: Int,
 )

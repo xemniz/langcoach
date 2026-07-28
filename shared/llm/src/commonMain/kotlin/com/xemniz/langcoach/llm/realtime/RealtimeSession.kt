@@ -76,9 +76,13 @@ class RealtimeSession internal constructor(
                         val msg = WireSessionUpdate(
                             session = WireSessionConfig(
                                 instructions = prompt,
-                                voice = lastVoice ?: "alloy",
-                                input_audio_transcription = WireTranscriptionCfg(
-                                    language = lastTranscriptionLanguage,
+                                audio = WireAudioConfig(
+                                    input = WireAudioInput(
+                                        transcription = WireTranscriptionCfg(
+                                            language = lastTranscriptionLanguage,
+                                        ),
+                                    ),
+                                    output = WireAudioOutput(voice = lastVoice ?: "alloy"),
                                 ),
                             ),
                         )
@@ -97,24 +101,38 @@ class RealtimeSession internal constructor(
         val ev = runCatching { json.decodeFromString(WireServerEvent.serializer(), text) }.getOrNull() ?: return
         when (ev.type) {
             "session.created" -> _events.emit(RealtimeEvent.SessionCreated)
-            "response.audio.delta" -> ev.delta?.let { b64 ->
-                runCatching { Base64.decode(b64) }.getOrNull()?.let { _events.emit(RealtimeEvent.AudioDelta(it)) }
+            "response.created" -> {
+                _events.emit(RealtimeEvent.ResponseStarted(ev.response?.id))
             }
-            "response.audio_transcript.delta" -> ev.delta?.let {
-                _events.emit(RealtimeEvent.TranscriptDelta(it, isUser = false))
+            "response.output_audio.delta", "response.audio.delta" -> ev.delta?.let { b64 ->
+                runCatching { Base64.decode(b64) }.getOrNull()?.let {
+                    _events.emit(RealtimeEvent.AudioDelta(it, responseId = ev.response_id))
+                }
             }
-            "response.audio_transcript.done" -> ev.transcript?.let {
-                _events.emit(RealtimeEvent.TranscriptCompleted(it, isUser = false))
+            "response.output_audio_transcript.delta", "response.audio_transcript.delta" -> ev.delta?.let {
+                _events.emit(RealtimeEvent.TranscriptDelta(it, isUser = false, itemId = ev.item_id))
+            }
+            "response.output_audio_transcript.done", "response.audio_transcript.done" -> ev.transcript?.let {
+                _events.emit(RealtimeEvent.TranscriptCompleted(it, isUser = false, itemId = ev.item_id))
             }
             "conversation.item.input_audio_transcription.delta" -> ev.delta?.let {
-                _events.emit(RealtimeEvent.TranscriptDelta(it, isUser = true))
+                _events.emit(RealtimeEvent.TranscriptDelta(it, isUser = true, itemId = ev.item_id))
             }
             "conversation.item.input_audio_transcription.completed" -> ev.transcript?.let {
-                _events.emit(RealtimeEvent.TranscriptCompleted(it, isUser = true))
+                _events.emit(RealtimeEvent.TranscriptCompleted(it, isUser = true, itemId = ev.item_id))
             }
             "response.done" -> {
                 val u = ev.response?.usage
-                _events.emit(RealtimeEvent.ResponseDone(u?.input_tokens ?: 0, u?.output_tokens ?: 0))
+                val details = ev.response?.status_details
+                _events.emit(
+                    RealtimeEvent.ResponseDone(
+                        tokensIn = u?.input_tokens ?: 0,
+                        tokensOut = u?.output_tokens ?: 0,
+                        status = RealtimeResponseStatus.fromWire(ev.response?.status),
+                        reason = details?.error?.message ?: details?.reason,
+                        responseId = ev.response?.id,
+                    ),
+                )
             }
             "error" -> _events.emit(RealtimeEvent.ErrorEvent(ev.error?.message ?: "Unknown error"))
             else -> Unit
@@ -132,8 +150,12 @@ class RealtimeSession internal constructor(
         val msg = WireSessionUpdate(
             session = WireSessionConfig(
                 instructions = systemPrompt,
-                voice = voice,
-                input_audio_transcription = WireTranscriptionCfg(language = transcriptionLanguage),
+                audio = WireAudioConfig(
+                    input = WireAudioInput(
+                        transcription = WireTranscriptionCfg(language = transcriptionLanguage),
+                    ),
+                    output = WireAudioOutput(voice = voice),
+                ),
             ),
         )
         runCatching { currentWs.send(json.encodeToString(WireSessionUpdate.serializer(), msg)) }

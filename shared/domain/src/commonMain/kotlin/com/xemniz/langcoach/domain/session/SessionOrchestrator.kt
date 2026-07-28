@@ -16,8 +16,9 @@ class SessionOrchestrator(
     private val getWeakCategories: GetWeakCategories,
     private val getRecentSessions: GetRecentSessions,
     private val userModelRepo: UserModelRepo,
+    private val sessionPlanner: SessionPlanner,
 ) {
-    suspend fun buildSystemPrompt(): String {
+    suspend fun prepareSession(): PreparedSession {
         val nativeLang = profilePrefs.nativeLang.first()
         val targetLang = profilePrefs.targetLang.first()
         val level = profilePrefs.level.first().name
@@ -26,58 +27,74 @@ class SessionOrchestrator(
         val recent = getRecentSessions(limit = 3).reversed()
         val userModel = userModelRepo.getContent()
 
-        val vocabList = if (due.isEmpty()) "(none yet — pick natural everyday topics)"
-            else due.joinToString(", ") { it.word }
-        val weakList = if (weak.isEmpty()) "- (no patterns identified yet)"
-            else weak.joinToString("\n") { "- ${it.category.name}: ${it.category.description}" }
+        val learnerMemory = userModel?.takeIf { it.isNotBlank() } ?: ""
+        val recentSummaries = recent.mapNotNull { it.summary?.takeIf(String::isNotBlank) }
+        val moment = currentMoment()
+        val plan = sessionPlanner.create(
+            SessionPlanningContext(
+                dueVocabulary = due.map { PlanningVocabulary(it.word, it.lemma) },
+                weakAreas = weak.map {
+                    PlanningWeakArea(
+                        code = it.category.code,
+                        name = it.category.name,
+                        recentCount = it.recentCount,
+                    )
+                },
+                recentSessionSummaries = recentSummaries,
+                recentObjectiveResults = recent.mapNotNull { session ->
+                    val objectiveId = session.objectiveId ?: return@mapNotNull null
+                    val outcome = session.objectiveOutcome
+                        ?.let { runCatching { ObjectiveOutcome.valueOf(it) }.getOrNull() }
+                        ?: return@mapNotNull null
+                    PlanningObjectiveResult(
+                        objectiveId = objectiveId,
+                        outcome = outcome,
+                        confidence = session.objectiveConfidence ?: 0.0,
+                    )
+                },
+                learnerMemory = learnerMemory,
+                currentMoment = moment,
+            ),
+        )
+
+        val vocabList = if (plan.kind == SessionObjectiveKind.VocabularyRetrieval) {
+            plan.target ?: "(none selected for this session)"
+        } else {
+            "(none selected for this session)"
+        }
+        val selectedWeakArea = if (plan.kind == SessionObjectiveKind.ErrorPattern) {
+            weak.firstOrNull { it.category.code == plan.target }
+        } else {
+            null
+        }
+        val weakList = selectedWeakArea?.let {
+            "- ${it.category.name}: ${it.category.description}"
+        } ?: "- (none selected for this session)"
         val recentList = if (recent.isEmpty()) "(none yet)"
             else recent.mapIndexedNotNull { i, s -> s.summary?.takeIf { it.isNotBlank() }?.let { "${i + 1}. $it" } }
                 .joinToString("\n").ifBlank { "(none yet)" }
 
-        val aboutMeBlock = userModel
-            ?.takeIf { it.isNotBlank() }
-            ?.let {
-                "\n\nAbout me (your private memory of who I am — reference naturally, do not list back to me):\n$it"
-            }
-            ?: ""
-
-        val moment = currentMoment()
-
-        return """
-You are a friendly, patient conversational language tutor.
-Help me practice $targetLang. My native language is $nativeLang. My current level is $level.$aboutMeBlock
-
-If possible, naturally weave in these vocabulary items I am reviewing today: $vocabList. Use them in everyday context, do not list them.
-
-I tend to make these kinds of mistakes — gently correct me when you hear them, briefly, then continue:
-$weakList
-
-For continuity, here are short summaries of my recent sessions (oldest first):
-$recentList
-
-The current moment: it is $moment.
-
-Conversation rules:
-- Speak only in $targetLang.
-- Keep your turns short (two to three sentences).
-- After I make a noticeable error, briefly correct me and move on. Do not over-correct.
-- Do not read symbols, asterisks, or markdown out loud. Speak only in plain words.
-- You drive the conversation: ask follow-up questions about details, push me to elaborate, do not let it drift into pleasantries.
-- Near the end of the session, plant a hook: ask me to come back next time with something specific to share.
-
-Open this session by choosing ONE of the following approaches — pick whichever feels most natural given what you know about me and the current moment:
-1. Callback: if something I mentioned in a previous session warrants a follow-up, ask about it specifically.
-2. Moment anchor: if the day, weekend, time of day, weather, or a holiday gives you a hook, reference it briefly. (Example: "Happy Friday — got plans for tonight?")
-3. Lesson framing: if there is a clear grammar or vocabulary area I should practice today, name it and pose a question that exercises it. (Example: "Today I want to work on past tense with you. Tell me what you did yesterday.")
-4. Otherwise, ask what has been on my mind this week or what I am working on right now.
-
-Hard rules for your first turn:
-- One or two short sentences. Translate naturally into $targetLang.
-- Never start with "How are you" or "What would you like to talk about today."
-- Do NOT list options for me. Pick one direction and go.
-- Show up like a teacher who has a plan, not a chatbot taking orders.
-""".trimIndent()
+        val systemPrompt = TutorPrompt.build(
+            TutorPromptContext(
+                nativeLanguage = nativeLang,
+                targetLanguage = targetLang,
+                level = level,
+                sessionPlan = plan.renderForPrompt(),
+                learnerMemory = learnerMemory.ifBlank { "(no personal memory yet)" },
+                dueVocabulary = vocabList,
+                weakAreas = weakList,
+                recentSessions = recentList,
+                currentMoment = moment,
+            ),
+        )
+        return PreparedSession(
+            plan = plan,
+            systemPrompt = systemPrompt,
+            transcriptionLanguage = transcriptionLanguageCode(targetLang),
+        )
     }
+
+    suspend fun buildSystemPrompt(): String = prepareSession().systemPrompt
 
     /**
      * Returns the user's target language as an ISO 639-1 two-letter code, or null if it can't be
@@ -86,7 +103,11 @@ Hard rules for your first turn:
      * otherwise common English language names are mapped to codes.
      */
     suspend fun transcriptionLanguageCode(): String? {
-        val raw = profilePrefs.targetLang.first().trim()
+        return transcriptionLanguageCode(profilePrefs.targetLang.first())
+    }
+
+    private fun transcriptionLanguageCode(language: String): String? {
+        val raw = language.trim()
         if (raw.isEmpty()) return null
         if (raw.length == 2 && raw.all { it.isLetter() }) return raw.lowercase()
         return when (raw.lowercase()) {

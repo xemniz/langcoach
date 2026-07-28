@@ -130,6 +130,21 @@ private fun ColumnScope.LiveContent(state: CallState.Live, viewModel: CallViewMo
             }
         }
     }
+    Text(
+        text = when {
+            state.isReconnecting -> "Reconnecting…"
+            state.isAssistantSpeaking -> "Coach speaking…"
+            state.isMuted -> "Microphone muted"
+            else -> "Listening…"
+        },
+        style = MaterialTheme.typography.labelLarge,
+        color = if (state.isAssistantSpeaking) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        },
+        modifier = Modifier.align(Alignment.CenterHorizontally),
+    )
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),

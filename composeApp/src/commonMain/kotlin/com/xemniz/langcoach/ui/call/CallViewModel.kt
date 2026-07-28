@@ -4,17 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.xemniz.langcoach.core.AppResult
 import com.xemniz.langcoach.di.AppScope
+import com.xemniz.langcoach.domain.reflection.SessionTranscript
+import com.xemniz.langcoach.domain.reflection.TranscriptSpeaker
+import com.xemniz.langcoach.domain.reflection.TranscriptTurn
 import com.xemniz.langcoach.domain.session.SessionOrchestrator
 import com.xemniz.langcoach.domain.usecase.FinishSession
 import com.xemniz.langcoach.domain.usecase.ReflectSession
 import com.xemniz.langcoach.domain.usecase.StartSession
-import com.xemniz.langcoach.llm.realtime.OpenAIRealtimeClient
-import com.xemniz.langcoach.llm.realtime.RealtimeEvent
-import com.xemniz.langcoach.llm.realtime.RealtimeSession
-import com.xemniz.langcoach.voice.AudioCapture
-import com.xemniz.langcoach.voice.AudioPlayback
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,26 +18,28 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class CallViewModel(
+class CallViewModel internal constructor(
     private val orchestrator: SessionOrchestrator,
-    private val realtimeClient: OpenAIRealtimeClient,
+    private val coordinator: RealtimeCallCoordinator,
     private val startSession: StartSession,
     private val finishSession: FinishSession,
     private val reflectSession: ReflectSession,
-    private val audioCapture: AudioCapture,
-    private val audioPlayback: AudioPlayback,
     private val appScope: AppScope,
     private val callSessionLifecycle: CallSessionLifecycle,
 ) : ViewModel() {
     private val _state = MutableStateFlow<CallState>(CallState.Idle)
     val state: StateFlow<CallState> = _state.asStateFlow()
 
-    private var session: RealtimeSession? = null
     private var sessionId: Long? = null
-    private var captureJob: Job? = null
-    private var eventsJob: Job? = null
-    private var tokensIn: Int = 0
-    private var tokensOut: Int = 0
+
+    init {
+        viewModelScope.launch {
+            coordinator.events.collect(::handleCoordinatorEvent)
+        }
+        viewModelScope.launch {
+            coordinator.state.collect(::handleCoordinatorState)
+        }
+    }
 
     fun onIntent(intent: CallIntent) {
         when (intent) {
@@ -55,139 +53,128 @@ class CallViewModel(
 
     private fun connect() {
         if (_state.value is CallState.Live || _state.value is CallState.Connecting) return
-        session = null
         sessionId = null
-        captureJob = null
-        eventsJob = null
-        tokensIn = 0
-        tokensOut = 0
         _state.value = CallState.Connecting
         callSessionLifecycle.start()
         viewModelScope.launch {
-            val prompt = orchestrator.buildSystemPrompt()
-            val transcriptionLanguage = orchestrator.transcriptionLanguageCode()
-            val newId = startSession()
-            sessionId = newId
-            when (val r = realtimeClient.connect()) {
-                is AppResult.Failure -> {
-                    _state.value = CallState.Failed(r.error.message)
-                }
+            val preparedSession = orchestrator.prepareSession()
+            val result = coordinator.start(
+                systemPrompt = preparedSession.systemPrompt,
+                transcriptionLanguage = preparedSession.transcriptionLanguage,
+            )
+            when (result) {
+                is AppResult.Failure -> failCall(result.error.message)
                 is AppResult.Success -> {
-                    session = r.value
-                    r.value.configure(systemPrompt = prompt, transcriptionLanguage = transcriptionLanguage)
-                    audioPlayback.start()
+                    val newId = runCatching {
+                        startSession(preparedSession.plan)
+                    }.getOrElse { error ->
+                        coordinator.stop()
+                        failCall(error.message ?: "Could not create the practice session")
+                        return@launch
+                    }
+                    sessionId = newId
+                    val snapshot = coordinator.state.value
                     _state.value = CallState.Live(
                         sessionId = newId,
                         messages = emptyList(),
-                        isMuted = false,
+                        isMuted = snapshot.isMuted,
+                        isAssistantSpeaking = snapshot.turn.isAssistantSpeaking,
+                        isReconnecting = snapshot.connection ==
+                            RealtimeConnectionState.Reconnecting,
                     )
-                    startEventPump(r.value)
-                    startCapturePump(r.value)
                 }
             }
         }
     }
 
-    private fun startEventPump(s: RealtimeSession) {
-        eventsJob = viewModelScope.launch(Dispatchers.IO) {
-            s.events.collect { ev ->
-                when (ev) {
-                    is RealtimeEvent.AudioDelta -> audioPlayback.write(ev.pcm16Le)
-                    is RealtimeEvent.TranscriptDelta -> appendFragment(
-                        if (ev.isUser) ChatRole.User else ChatRole.Assistant,
-                        ev.text,
-                    )
-                    is RealtimeEvent.TranscriptCompleted -> replaceLastFragment(
-                        if (ev.isUser) ChatRole.User else ChatRole.Assistant,
-                        ev.text,
-                    )
-                    is RealtimeEvent.ResponseDone -> {
-                        tokensIn += ev.tokensIn
-                        tokensOut += ev.tokensOut
-                    }
-                    is RealtimeEvent.ErrorEvent -> _state.value = CallState.Failed(ev.message)
-                    RealtimeEvent.SessionCreated -> Unit
-                    is RealtimeEvent.Reconnecting -> Unit
-                    RealtimeEvent.Reconnected -> Unit
-                }
-            }
+    private fun handleCoordinatorEvent(event: RealtimeCallEvent) {
+        when (event) {
+            is RealtimeCallEvent.TranscriptDelta -> appendFragment(
+                role = if (event.isUser) ChatRole.User else ChatRole.Assistant,
+                fragment = event.text,
+                realtimeItemId = event.itemId,
+            )
+            is RealtimeCallEvent.TranscriptCompleted -> replaceLastFragment(
+                role = if (event.isUser) ChatRole.User else ChatRole.Assistant,
+                fullText = event.text,
+                realtimeItemId = event.itemId,
+            )
         }
     }
 
-    private fun startCapturePump(s: RealtimeSession) {
-        captureJob = viewModelScope.launch {
-            audioCapture.start().collect { chunk ->
-                val current = _state.value
-                if (current is CallState.Live && !current.isMuted) {
-                    s.sendAudio(chunk)
-                }
-            }
+    private fun handleCoordinatorState(snapshot: RealtimeCallSnapshot) {
+        val failure = snapshot.turn as? VoiceTurnState.Failed
+        if (failure != null) {
+            failCall(failure.message)
+            return
         }
-    }
-
-    private fun appendFragment(role: ChatRole, fragment: String) {
         _state.update { current ->
             if (current !is CallState.Live) return@update current
-            val msgs = current.messages
-            val last = msgs.lastOrNull()
-            val updated = if (last != null && last.role == role) {
-                msgs.dropLast(1) + last.copy(text = last.text + fragment)
-            } else {
-                msgs + ChatMessage(role, fragment)
-            }
-            current.copy(messages = updated)
+            current.copy(
+                isMuted = snapshot.isMuted,
+                isAssistantSpeaking = snapshot.turn.isAssistantSpeaking,
+                isReconnecting = snapshot.connection ==
+                    RealtimeConnectionState.Reconnecting,
+            )
         }
     }
 
-    private fun replaceLastFragment(role: ChatRole, fullText: String) {
+    private fun appendFragment(role: ChatRole, fragment: String, realtimeItemId: String?) {
         _state.update { current ->
             if (current !is CallState.Live) return@update current
-            val msgs = current.messages
-            val last = msgs.lastOrNull()
-            val updated = if (last != null && last.role == role) {
-                msgs.dropLast(1) + last.copy(text = fullText)
-            } else {
-                msgs + ChatMessage(role, fullText)
-            }
-            current.copy(messages = updated)
+            current.copy(
+                messages = appendTranscript(current.messages, role, fragment, realtimeItemId),
+            )
+        }
+    }
+
+    private fun replaceLastFragment(role: ChatRole, fullText: String, realtimeItemId: String?) {
+        _state.update { current ->
+            if (current !is CallState.Live) return@update current
+            current.copy(
+                messages = completeTranscript(current.messages, role, fullText, realtimeItemId),
+            )
         }
     }
 
     private fun toggleMute() {
-        _state.update { current ->
-            if (current is CallState.Live) current.copy(isMuted = !current.isMuted) else current
+        val current = _state.value as? CallState.Live ?: return
+        coordinator.setMuted(!current.isMuted)
+    }
+
+    private fun failCall(message: String) {
+        if (_state.value is CallState.Failed || _state.value is CallState.Ended) return
+        _state.value = CallState.Failed(message)
+        viewModelScope.launch {
+            runCatching { coordinator.stop() }
+            runCatching { callSessionLifecycle.stop() }
         }
     }
 
     private fun end() {
         val current = _state.value
-        val transcripts = if (current is CallState.Live) renderTranscripts(current.messages) else "" to ""
+        val transcript = if (current is CallState.Live) {
+            renderTranscript(current.messages)
+        } else {
+            SessionTranscript(emptyList())
+        }
         viewModelScope.launch {
-            captureJob?.cancel()
-            eventsJob?.cancel()
-            runCatching { audioCapture.stop() }
-            runCatching { audioPlayback.stop() }
-            session?.close()
-            session = null
+            val usage = coordinator.stop()
             callSessionLifecycle.stop()
             val id = sessionId
             if (id != null) {
-                finishSession(sessionId = id, tokensIn = tokensIn, tokensOut = tokensOut)
+                finishSession(
+                    sessionId = id,
+                    tokensIn = usage.tokensIn,
+                    tokensOut = usage.tokensOut,
+                )
                 _state.value = CallState.Ended
                 appScope.scope.launch {
-                    val r = runCatching {
+                    runCatching {
                         reflectSession(
                             sessionId = id,
-                            userTranscript = transcripts.first,
-                            assistantTranscript = transcripts.second,
+                            transcript = transcript,
                         )
-                    }
-                    r.onFailure { println("REFLECT_END: threw ${it::class.simpleName}: ${it.message}") }
-                    r.onSuccess { ar ->
-                        when (ar) {
-                            is AppResult.Failure -> println("REFLECT_END: returned failure ${ar.error}")
-                            is AppResult.Success -> println("REFLECT_END: ok addedVocab=${ar.value}")
-                        }
                     }
                 }
             } else {
@@ -198,19 +185,24 @@ class CallViewModel(
 
     override fun onCleared() {
         super.onCleared()
-        val s = session
-        session = null
-        if (s != null) {
-            appScope.scope.launch { runCatching { s.close() } }
+        appScope.scope.launch {
+            runCatching { coordinator.stop() }
         }
         runCatching { callSessionLifecycle.stop() }
-        runCatching { audioCapture.stop() }
-        runCatching { audioPlayback.stop() }
     }
 
-    private fun renderTranscripts(messages: List<ChatMessage>): Pair<String, String> {
-        val user = messages.filter { it.role == ChatRole.User }.joinToString("\n") { it.text }
-        val assistant = messages.filter { it.role == ChatRole.Assistant }.joinToString("\n") { it.text }
-        return user to assistant
-    }
+    private fun renderTranscript(messages: List<ChatMessage>) = SessionTranscript(
+        turns = messages
+            .filter { it.text.isNotBlank() }
+            .mapIndexed { index, message ->
+                TranscriptTurn(
+                    id = "turn-${index + 1}",
+                    speaker = when (message.role) {
+                        ChatRole.User -> TranscriptSpeaker.Learner
+                        ChatRole.Assistant -> TranscriptSpeaker.Tutor
+                    },
+                    text = message.text.trim(),
+                )
+            },
+    )
 }

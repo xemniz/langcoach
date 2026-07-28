@@ -77,3 +77,42 @@ internal fun userModelSchema(): JsonElement = buildJsonObject {
         putJsonObject("content") { put("type", "string") }
     }
 }
+
+internal fun objectiveEvaluationSchema(): JsonElement = buildJsonObject {
+    put("type", "object")
+    put("additionalProperties", false)
+    putJsonArray("required") {
+        add("outcome")
+        add("evidenceTurnId")
+        add("evidenceText")
+        add("confidence")
+    }
+    putJsonObject("properties") {
+        putJsonObject("outcome") {
+            put("type", "string")
+            putJsonArray("enum") {
+                add("NotObserved")
+                add("Attempted")
+                add("AchievedWithHelp")
+                add("AchievedIndependently")
+            }
+        }
+        putJsonObject("evidenceTurnId") {
+            putJsonArray("type") {
+                add("string")
+                add("null")
+            }
+        }
+        putJsonObject("evidenceText") {
+            putJsonArray("type") {
+                add("string")
+                add("null")
+            }
+        }
+        putJsonObject("confidence") {
+            put("type", "number")
+            put("minimum", 0.0)
+            put("maximum", 1.0)
+        }
+    }
+}

@@ -2,7 +2,11 @@ package com.xemniz.langcoach.ui.call
 
 enum class ChatRole { User, Assistant }
 
-data class ChatMessage(val role: ChatRole, val text: String)
+data class ChatMessage(
+    val role: ChatRole,
+    val text: String,
+    val realtimeItemId: String? = null,
+)
 
 sealed interface CallState {
     data object Idle : CallState
@@ -12,6 +16,8 @@ sealed interface CallState {
         val sessionId: Long,
         val messages: List<ChatMessage>,
         val isMuted: Boolean,
+        val isAssistantSpeaking: Boolean,
+        val isReconnecting: Boolean,
     ) : CallState
     data class Failed(val message: String) : CallState
     data object Ended : CallState

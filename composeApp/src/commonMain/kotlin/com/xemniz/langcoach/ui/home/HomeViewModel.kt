@@ -2,8 +2,10 @@ package com.xemniz.langcoach.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.xemniz.langcoach.data.SecureStorage
 import com.xemniz.langcoach.data.repo.UsageRepo
 import com.xemniz.langcoach.data.repo.VocabRepo
+import com.xemniz.langcoach.domain.OPENAI_API_KEY
 import com.xemniz.langcoach.domain.usecase.GetDueVocab
 import com.xemniz.langcoach.domain.usecase.GetWeakCategories
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,11 +19,13 @@ data class HomeState(
     val dueCount: Int = 0,
     val weakCount: Int = 0,
     val totalCostCents: Int = 0,
+    val hasApiKey: Boolean = false,
 )
 
 class HomeViewModel(
     private val vocabRepo: VocabRepo,
     private val usageRepo: UsageRepo,
+    private val secureStorage: SecureStorage,
     private val getDueVocab: GetDueVocab,
     private val getWeakCategories: GetWeakCategories,
 ) : ViewModel() {
@@ -37,7 +41,8 @@ class HomeViewModel(
             val due = getDueVocab().size
             val weak = getWeakCategories(windowDays = 14, limit = 10).size
             val cost = usageRepo.totalCostCents()
-            _state.update { HomeState(vocab, due, weak, cost) }
+            val hasApiKey = !secureStorage.read(OPENAI_API_KEY).isNullOrBlank()
+            _state.update { HomeState(vocab, due, weak, cost, hasApiKey) }
         }
     }
 }

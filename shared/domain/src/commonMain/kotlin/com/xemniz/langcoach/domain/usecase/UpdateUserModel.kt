@@ -4,6 +4,7 @@ import com.xemniz.langcoach.core.AppResult
 import com.xemniz.langcoach.data.prefs.ProfilePrefs
 import com.xemniz.langcoach.data.repo.UserModelRepo
 import com.xemniz.langcoach.domain.reflection.ReflectionService
+import com.xemniz.langcoach.domain.reflection.SessionTranscript
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 
@@ -13,8 +14,7 @@ class UpdateUserModel(
     private val profilePrefs: ProfilePrefs,
 ) {
     suspend operator fun invoke(
-        userTranscript: String,
-        assistantTranscript: String,
+        transcript: SessionTranscript,
         sessionSummary: String,
         atMillis: Long = Clock.System.now().toEpochMilliseconds(),
     ): AppResult<TokenUsage> {
@@ -23,7 +23,7 @@ class UpdateUserModel(
         val previous = userModelRepo.getContent()
         val result = reflectionService.updateUserModel(
             targetLang, nativeLang, previous,
-            userTranscript, assistantTranscript, sessionSummary,
+            transcript, sessionSummary,
         )
         return when (result) {
             is AppResult.Failure -> result

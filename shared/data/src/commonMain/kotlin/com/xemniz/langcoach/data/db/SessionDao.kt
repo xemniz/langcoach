@@ -13,6 +13,24 @@ interface SessionDao {
     @Query("UPDATE session_summaries SET endedAt = :endedAt, summary = :summary, tokensIn = :tokensIn, tokensOut = :tokensOut, costCents = :costCents WHERE id = :id")
     suspend fun finish(id: Long, endedAt: Long, summary: String, tokensIn: Int, tokensOut: Int, costCents: Int)
 
+    @Query(
+        """
+        UPDATE session_summaries
+        SET objectiveOutcome = :outcome,
+            objectiveEvidenceTurnId = :evidenceTurnId,
+            objectiveEvidenceText = :evidenceText,
+            objectiveConfidence = :confidence
+        WHERE id = :id
+        """,
+    )
+    suspend fun updateObjectiveEvaluation(
+        id: Long,
+        outcome: String,
+        evidenceTurnId: String?,
+        evidenceText: String?,
+        confidence: Double,
+    )
+
     @Query("SELECT * FROM session_summaries WHERE endedAt IS NOT NULL ORDER BY endedAt DESC LIMIT :limit")
     suspend fun recent(limit: Int): List<SessionSummary>
 

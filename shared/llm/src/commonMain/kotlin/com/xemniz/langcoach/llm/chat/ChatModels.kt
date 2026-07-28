@@ -28,3 +28,11 @@ data class SessionSummaryResult(val summary: String)
 
 @Serializable
 data class UserModelResult(val content: String)
+
+@Serializable
+data class ObjectiveEvaluationResult(
+    val outcome: String,
+    val evidenceTurnId: String?,
+    val evidenceText: String?,
+    val confidence: Double,
+)
