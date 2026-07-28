@@ -1,9 +1,5 @@
 package com.xemniz.langcoach.ui.call
 
-import android.Manifest
-import android.content.pm.PackageManager
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,45 +23,25 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun CallScreen(
+expect fun CallScreen(onDone: () -> Unit)
+
+@Composable
+internal fun CallScreenContent(
+    state: CallState,
+    onIntent: (CallIntent) -> Unit,
     onDone: () -> Unit,
-    viewModel: CallViewModel = koinViewModel(),
+    onPermissionRequest: () -> Unit,
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-    ) { granted ->
-        if (granted) viewModel.onIntent(CallIntent.PermissionGranted)
-        else viewModel.onIntent(CallIntent.PermissionDenied)
-    }
-
-    LaunchedEffect(Unit) {
-        val s = state
-        if (s is CallState.Idle || s is CallState.Ended || s is CallState.Failed) {
-            val granted = ContextCompat.checkSelfPermission(
-                context, Manifest.permission.RECORD_AUDIO,
-            ) == PackageManager.PERMISSION_GRANTED
-            if (granted) viewModel.onIntent(CallIntent.Start)
-            else permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-        }
-    }
-
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        when (val s = state) {
+        when (state) {
             CallState.Idle -> {
                 Text("Preparing…", style = MaterialTheme.typography.titleMedium)
                 CircularProgressIndicator()
@@ -75,9 +51,7 @@ fun CallScreen(
                     "Microphone access is needed for voice sessions.",
                     style = MaterialTheme.typography.bodyLarge,
                 )
-                Button(onClick = { permissionLauncher.launch(Manifest.permission.RECORD_AUDIO) }) {
-                    Text("Grant microphone access")
-                }
+                Button(onClick = onPermissionRequest) { Text("Grant microphone access") }
                 FilledTonalButton(onClick = onDone) { Text("Back") }
             }
             CallState.Connecting -> {
@@ -85,14 +59,14 @@ fun CallScreen(
                 Spacer(Modifier.height(8.dp))
                 CircularProgressIndicator()
             }
-            is CallState.Live -> LiveContent(s, viewModel)
+            is CallState.Live -> LiveContent(state, onIntent)
             is CallState.Failed -> {
                 Text(
                     "Couldn't start session",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.error,
                 )
-                Text(s.message, color = MaterialTheme.colorScheme.error)
+                Text(state.message, color = MaterialTheme.colorScheme.error)
                 FilledTonalButton(onClick = onDone) { Text("Back") }
             }
             CallState.Ended -> {
@@ -104,12 +78,10 @@ fun CallScreen(
 }
 
 @Composable
-private fun ColumnScope.LiveContent(state: CallState.Live, viewModel: CallViewModel) {
+private fun ColumnScope.LiveContent(state: CallState.Live, onIntent: (CallIntent) -> Unit) {
     val listState = rememberLazyListState()
     LaunchedEffect(state.messages.size, state.messages.lastOrNull()?.text?.length) {
-        if (state.messages.isNotEmpty()) {
-            listState.animateScrollToItem(state.messages.lastIndex)
-        }
+        if (state.messages.isNotEmpty()) listState.animateScrollToItem(state.messages.lastIndex)
     }
     LazyColumn(
         state = listState,
@@ -125,8 +97,8 @@ private fun ColumnScope.LiveContent(state: CallState.Live, viewModel: CallViewMo
                 )
             }
         } else {
-            items(state.messages.size, key = { it }) { i ->
-                MessageBubble(state.messages[i])
+            items(state.messages.size, key = { it }) { index ->
+                MessageBubble(state.messages[index])
             }
         }
     }
@@ -149,21 +121,27 @@ private fun ColumnScope.LiveContent(state: CallState.Live, viewModel: CallViewMo
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
     ) {
-        FilledTonalButton(onClick = { viewModel.onIntent(CallIntent.ToggleMute) }) {
+        FilledTonalButton(onClick = { onIntent(CallIntent.ToggleMute) }) {
             Text(if (state.isMuted) "Unmute" else "Mute")
         }
-        Button(onClick = { viewModel.onIntent(CallIntent.End) }) {
-            Text("End session")
-        }
+        Button(onClick = { onIntent(CallIntent.End) }) { Text("End session") }
     }
 }
 
 @Composable
-private fun MessageBubble(msg: ChatMessage) {
-    val isUser = msg.role == ChatRole.User
-    val align = if (isUser) Alignment.CenterEnd else Alignment.CenterStart
-    val container = if (isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
-    val onContainer = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+private fun MessageBubble(message: ChatMessage) {
+    val isUser = message.role == ChatRole.User
+    val alignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart
+    val container = if (isUser) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant
+    }
+    val content = if (isUser) {
+        MaterialTheme.colorScheme.onPrimary
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
     Box(modifier = Modifier.fillMaxWidth()) {
         Surface(
             color = container,
@@ -173,11 +151,11 @@ private fun MessageBubble(msg: ChatMessage) {
                 bottomStart = if (isUser) 16.dp else 4.dp,
                 bottomEnd = if (isUser) 4.dp else 16.dp,
             ),
-            modifier = Modifier.align(align).widthIn(max = 320.dp),
+            modifier = Modifier.align(alignment).widthIn(max = 320.dp),
         ) {
             Text(
-                msg.text,
-                color = onContainer,
+                message.text,
+                color = content,
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
             )

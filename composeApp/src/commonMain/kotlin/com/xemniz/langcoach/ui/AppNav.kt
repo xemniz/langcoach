@@ -1,6 +1,5 @@
 package com.xemniz.langcoach.ui
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -44,7 +43,7 @@ fun AppNav() {
     val pop = {
         if (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
     }
-    BackHandler(enabled = backStack.size > 1) { pop() }
+    PlatformBackHandler(enabled = backStack.size > 1) { pop() }
     App {
         when (backStack.last()) {
             Route.Home -> BareScaffold {

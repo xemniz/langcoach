@@ -1,4 +1,4 @@
-name: Android
+name: Mobile
 
 on:
   push:
@@ -29,3 +29,35 @@ jobs:
 
       - name: Build and test Android
         run: ./gradlew :androidApp:assembleDebug :composeApp:testDebugUnitTest :shared:domain:testDebugUnitTest
+
+  ios-build:
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Compile shared iOS code
+        run: ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64
+
+      - name: Build iOS app
+        run: >
+          xcodebuild
+          -project iosApp/iosApp.xcodeproj
+          -scheme iosApp
+          -configuration Debug
+          -sdk iphonesimulator
+          -destination 'generic/platform=iOS Simulator'
+          CODE_SIGNING_ALLOWED=NO
+          build

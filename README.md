@@ -2,7 +2,7 @@
 
 **A privacy-conscious voice tutor that makes every conversation inform the next one.**
 
-LangCoach is an Android-first Kotlin Multiplatform project for real-time language
+LangCoach is a Kotlin Multiplatform project for real-time language
 practice. It listens, speaks, and—after a session—turns the conversation into useful
 memory: vocabulary to revisit, recurring errors, and context for the next lesson.
 
@@ -56,8 +56,8 @@ flowchart LR
 - Room stores session summaries, vocabulary, error categories, usage, and editable coach memory.
 - Ktor handles chat and real-time model protocols.
 - Koin wires shared and platform-specific implementations.
-- Android audio uses low-level capture/playback for PCM streaming.
-- A foreground service keeps an active voice session resilient.
+- Android uses low-level audio capture/playback and a foreground service for resilient calls.
+- iOS uses AVAudioEngine for PCM streaming and Keychain for API-key storage.
 - Focused common tests cover transcript reduction and vocabulary scheduling behavior.
 - A persisted session plan and evidence-backed objective outcome close the learning loop.
 - A versioned tutor prompt and live 12-case quality suite make coaching changes measurable.
@@ -78,8 +78,19 @@ No network connection or API key is required for this path.
 ## Run a real voice session
 
 Open **Settings**, add an OpenAI API key, choose the native and target languages, then
-start a conversation. The key is stored using Android secure storage and is not committed
+start a conversation. The key is stored using platform secure storage and is not committed
 to the repository.
+
+### iOS
+
+1. Install Xcode 15 or later and select it with `xcode-select`.
+2. Open `iosApp/iosApp.xcodeproj`.
+3. Choose the `iosApp` scheme and an iPhone simulator or device.
+4. Run the app and allow microphone access when starting the first live session.
+
+The iOS target shares the Compose UI, navigation, domain logic, Room database, real-time
+client, and learning loop. AVAudioEngine capture/playback and Keychain storage are native
+iOS implementations.
 
 ```bash
 ./gradlew :androidApp:assembleDebug \
@@ -102,11 +113,11 @@ transcript-level evaluation.
 
 ## Product decisions
 
-LangCoach is an Android-first, local-first product prototype built to validate one idea:
+LangCoach is a mobile, local-first product prototype built to validate one idea:
 a useful voice tutor should carry learning forward without turning every conversation into
 cloud account data.
 
-- **A complete Android loop:** real-time voice practice, live transcription, structured
+- **A complete mobile loop:** real-time voice practice, live transcription, structured
   reflection, vocabulary review, recurring-error tracking, and next-session planning.
 - **Shared where it matters:** domain rules, persistence, model protocols, and most UI
   state live in KMP modules; latency-sensitive audio remains platform-specific.
@@ -117,16 +128,16 @@ cloud account data.
 
 The current vocabulary scheduler intentionally uses a small, testable FSRS-inspired model.
 A production release would adopt a verified implementation and calibrate it with longitudinal
-learning data. The iOS target establishes the shared architecture boundary; native audio and
-Keychain integration are the remaining platform work.
+learning data. Android is the physically tested reference client; the iOS client now has a
+runnable Xcode target and native audio and Keychain implementations.
 
 ## Roadmap
 
-The next milestone is **cross-platform validation**, not feature accumulation:
+The next milestone is **cross-platform hardening**, not feature accumulation:
 
-1. Ship the native iOS audio and Keychain implementations against the existing shared core.
+1. Validate iOS audio routing, interruptions, and background transitions on physical devices.
 2. Expand real-time protocol and reflection-schema contract coverage.
-3. Evaluate saved and live device audio for interruption, noise, latency, pacing, and prosody.
+3. Evaluate saved and live device audio for noise, latency, pacing, and prosody.
 4. Replace the prototype scheduler with a verified FSRS implementation and calibration data.
 5. Explore opt-in encrypted sync only if multi-device testing proves it improves the
    local-first experience.
