@@ -100,26 +100,36 @@ establish a fresh reviewed baseline. See
 [evals/tutor/README.md](evals/tutor/README.md) for the rubric, scenarios, and limits of
 transcript-level evaluation.
 
-## Current scope
+## Product decisions
 
-This is an **Android-first portfolio MVP**, not a released consumer product.
+LangCoach is an Android-first, local-first product prototype built to validate one idea:
+a useful voice tutor should carry learning forward without turning every conversation into
+cloud account data.
 
-- Android voice sessions are implemented.
-- Shared KMP architecture and iOS targets compile incrementally.
-- iOS audio capture and Keychain storage remain explicit follow-up work.
-- The vocabulary scheduler is a small prototype inspired by FSRS concepts; production
-  adoption would use a verified implementation and calibration data.
-- There is intentionally no backend, account system, telemetry, or cloud sync.
+- **A complete Android loop:** real-time voice practice, live transcription, structured
+  reflection, vocabulary review, recurring-error tracking, and next-session planning.
+- **Shared where it matters:** domain rules, persistence, model protocols, and most UI
+  state live in KMP modules; latency-sensitive audio remains platform-specific.
+- **Local by default:** there is no account system, analytics SDK, backend, or mandatory
+  cloud sync. The learner can inspect and edit the memory stored on the device.
+- **Evidence over magic:** session outcomes require transcript evidence, tutor behavior is
+  versioned and evaluated, and estimated model cost stays visible.
 
-These boundaries are deliberate and documented rather than hidden behind placeholder claims.
+The current vocabulary scheduler intentionally uses a small, testable FSRS-inspired model.
+A production release would adopt a verified implementation and calibrate it with longitudinal
+learning data. The iOS target establishes the shared architecture boundary; native audio and
+Keychain integration are the remaining platform work.
 
-## What I would build next
+## Roadmap
 
-1. Complete the native iOS audio and secure-storage implementations.
-2. Add contract tests for real-time wire events and reflection schemas.
-3. Add saved-audio and physical-device tutor evals for prosody, noise, and interruption.
-4. Replace prototype scheduling with a verified FSRS library.
-5. Add opt-in encrypted sync only after validating the local-first experience.
+The next milestone is **cross-platform validation**, not feature accumulation:
+
+1. Ship the native iOS audio and Keychain implementations against the existing shared core.
+2. Expand real-time protocol and reflection-schema contract coverage.
+3. Evaluate saved and live device audio for interruption, noise, latency, pacing, and prosody.
+4. Replace the prototype scheduler with a verified FSRS implementation and calibration data.
+5. Explore opt-in encrypted sync only if multi-device testing proves it improves the
+   local-first experience.
 
 ## Stack
 
