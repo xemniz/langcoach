@@ -9,7 +9,7 @@ data class SettingsState(
     val verifySuccess: Boolean = false,
     val nativeLang: String = "",
     val targetLang: String = "",
-    val level: ProfileLevel = ProfileLevel.A1,
+    val level: ProfileLevel = ProfileLevel.Unknown,
 )
 
 sealed interface SettingsIntent {

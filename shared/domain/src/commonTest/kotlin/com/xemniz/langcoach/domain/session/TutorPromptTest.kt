@@ -26,7 +26,7 @@ class TutorPromptTest {
 
     @Test
     fun promptHasStableVersion() {
-        assertEquals("tutor-v1.1.0", TutorPrompt.VERSION)
+        assertEquals("tutor-v1.2.0", TutorPrompt.VERSION)
     }
 
     @Test
@@ -47,7 +47,7 @@ class TutorPromptTest {
         assertContains(prompt, "no more than three words")
         assertContains(prompt, "Never stack corrections")
         assertContains(prompt, "Never repeat an identical question or drill")
-        assertContains(prompt, "At most once in a session")
+        assertContains(prompt, "Keep each focused activity brief")
         assertContains(prompt, "start with only an in-character line")
         assertContains(prompt, "Do not add another model phrase")
         assertContains(prompt, "success with help")
@@ -59,8 +59,19 @@ class TutorPromptTest {
         assertContains(prompt, "Respond to the meaning")
         assertContains(prompt, "emotionally meaningful story")
         assertContains(prompt, "Avoid an interview rhythm")
-        assertContains(prompt, "Default to free conversation")
+        assertContains(prompt, "freer conversation")
         assertContains(prompt, "do not force an exercise", ignoreCase = true)
         assertContains(prompt, "twelve words or fewer")
+    }
+
+    @Test
+    fun preparedLessonUsesFlexibleTeachingArcAndMeaningfulRetry() {
+        assertContains(prompt, "prepared hour-long lesson")
+        assertContains(prompt, "check prior learning")
+        assertContains(prompt, "focused teaching")
+        assertContains(prompt, "meaningful practice")
+        assertContains(prompt, "changed-context retry")
+        assertContains(prompt, "end early")
+        assertContains(prompt, "asks for easier, harder, slower, faster")
     }
 }

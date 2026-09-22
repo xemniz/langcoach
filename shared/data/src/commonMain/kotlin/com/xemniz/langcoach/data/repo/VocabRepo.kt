@@ -7,6 +7,8 @@ import kotlinx.coroutines.flow.Flow
 class VocabRepo(private val dao: VocabDao) {
     suspend fun count(): Int = dao.count()
     suspend fun getDue(nowMillis: Long): List<VocabItem> = dao.getDueItems(nowMillis)
+    suspend fun getDue(nowMillis: Long, targetLang: String): List<VocabItem> =
+        dao.getDueItemsForLanguage(nowMillis, targetLang)
     fun observeAll(): Flow<List<VocabItem>> = dao.observeAll()
     suspend fun insert(item: VocabItem): Long = dao.insert(item)
     suspend fun update(item: VocabItem) = dao.update(item)

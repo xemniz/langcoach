@@ -40,8 +40,14 @@ class ErrorRepo(
 
     suspend fun forSession(sessionId: Long): List<ErrorInstance> = instanceDao.forSession(sessionId)
 
-    suspend fun weakCategories(sinceMillis: Long, limit: Int = 5): List<WeakCategory> {
-        val counts = instanceDao.topCategoriesSince(sinceMillis, limit)
+    suspend fun deleteForSession(sessionId: Long) = instanceDao.deleteForSession(sessionId)
+
+    suspend fun weakCategories(
+        sinceMillis: Long,
+        targetLang: String,
+        limit: Int = 5,
+    ): List<WeakCategory> {
+        val counts = instanceDao.topCategoriesSinceForLanguage(sinceMillis, targetLang, limit)
         if (counts.isEmpty()) return emptyList()
         val byId = categoryDao.all().associateBy { it.id }
         return counts.mapNotNull { c -> byId[c.categoryId]?.let { WeakCategory(it, c.recentCount) } }

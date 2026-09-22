@@ -1,6 +1,7 @@
 package com.xemniz.langcoach.data.db
 
 import androidx.room3.Entity
+import androidx.room3.ColumnInfo
 import androidx.room3.PrimaryKey
 
 @Entity(tableName = "session_summaries")
@@ -22,4 +23,14 @@ data class SessionSummary(
     val objectiveEvidenceTurnId: String? = null,
     val objectiveEvidenceText: String? = null,
     val objectiveConfidence: Double? = null,
+    @ColumnInfo(defaultValue = "''") val nativeLang: String = "",
+    @ColumnInfo(defaultValue = "''") val targetLang: String = "",
+    @ColumnInfo(defaultValue = "''") val level: String = "",
+    @ColumnInfo(defaultValue = "'NotQueued'") val processingState: String = "NotQueued",
+    val processingError: String? = null,
+    val reflectionStartedAt: Long? = null,
+    val reflectionCompletedAt: Long? = null,
+    val strength: String? = null,
+    val nextStep: String? = null,
+    val assignment: String? = null,
 )

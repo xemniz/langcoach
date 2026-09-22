@@ -15,6 +15,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -23,6 +25,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.datetime.Instant
 import org.koin.compose.viewmodel.koinViewModel
+import com.xemniz.langcoach.data.db.PracticalGoalStatus
+import com.xemniz.langcoach.domain.usecase.PracticalGoalResponse
 
 @Composable
 fun CoachMemoryScreen(
@@ -91,6 +95,83 @@ fun CoachMemoryScreen(
                 enabled = !state.saving,
             ) {
                 Text("Clear")
+            }
+        }
+
+        Text("Practical goals", style = MaterialTheme.typography.titleLarge)
+        if (state.goals.none { it.status != PracticalGoalStatus.Rejected }) {
+            Text(
+                "The coach will infer possible real-world goals from your conversations and ask before changing your course.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        state.goals.filter { it.status != PracticalGoalStatus.Rejected }.forEach { goal ->
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        "${goal.targetLang} · ${goal.status.name}",
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    OutlinedTextField(
+                        value = goal.description,
+                        onValueChange = { viewModel.onGoalDescriptionChange(goal.id, it) },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("What you want to do with the language") },
+                    )
+                    Text(
+                        "From your words: “${goal.evidenceText}”",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = { viewModel.saveGoal(goal.id) }) { Text("Save") }
+                        if (goal.status != PracticalGoalStatus.Confirmed) {
+                            Button(
+                                onClick = {
+                                    viewModel.respondToGoal(goal.id, PracticalGoalResponse.Accept)
+                                },
+                            ) { Text("Use for my course") }
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (goal.status != PracticalGoalStatus.Confirmed) {
+                            OutlinedButton(
+                                onClick = {
+                                    viewModel.respondToGoal(goal.id, PracticalGoalResponse.Defer)
+                                },
+                            ) { Text("Later") }
+                        }
+                        OutlinedButton(
+                            onClick = { viewModel.removeGoal(goal.id) },
+                        ) { Text("Remove") }
+                    }
+                }
+            }
+        }
+
+        Text("Recent lesson records", style = MaterialTheme.typography.titleLarge)
+        state.recentLessons.forEach { lesson ->
+            Card {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(5.dp),
+                ) {
+                    Text(
+                        "${lesson.targetLang.ifBlank { "Language not recorded" }} · ${lesson.processingState}",
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    lesson.strength?.takeIf(String::isNotBlank)?.let { Text("Demonstrated: $it") }
+                    lesson.nextStep?.takeIf(String::isNotBlank)?.let { Text("Next step: $it") }
+                    lesson.assignment?.takeIf(String::isNotBlank)?.let { Text("Practice: $it") }
+                    lesson.processingError?.let {
+                        Text(it, color = MaterialTheme.colorScheme.error)
+                    }
+                }
             }
         }
     }

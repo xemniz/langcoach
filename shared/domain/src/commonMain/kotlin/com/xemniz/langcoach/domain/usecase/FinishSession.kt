@@ -1,8 +1,10 @@
 package com.xemniz.langcoach.domain.usecase
 
 import com.xemniz.langcoach.data.db.UsageEntry
+import com.xemniz.langcoach.data.db.SessionTurn
 import com.xemniz.langcoach.data.repo.SessionRepo
 import com.xemniz.langcoach.data.repo.UsageRepo
+import com.xemniz.langcoach.domain.reflection.SessionTranscript
 import kotlinx.datetime.Clock
 
 class FinishSession(
@@ -14,23 +16,25 @@ class FinishSession(
         tokensIn: Int,
         tokensOut: Int,
         atMillis: Long = Clock.System.now().toEpochMilliseconds(),
-        summary: String = "",
         costCents: Int = 0,
+        transcript: SessionTranscript = SessionTranscript(emptyList()),
     ) {
-        sessionRepo.finish(
+        sessionRepo.finishAndQueue(
             id = sessionId,
             endedAt = atMillis,
-            summary = summary,
             tokensIn = tokensIn,
             tokensOut = tokensOut,
             costCents = costCents,
+            turns = transcript.turns.mapIndexed { index, turn ->
+                SessionTurn(sessionId, turn.id, index, turn.speaker.name, turn.text)
+            },
         )
-        usageRepo.add(
+        usageRepo.replaceForSessionEndpoint(
             UsageEntry(
                 createdAt = atMillis,
                 sessionId = sessionId,
                 endpoint = "realtime",
-                model = "gpt-4o-realtime-preview-2024-12-17",
+                model = "gpt-realtime-2.1",
                 tokensIn = tokensIn,
                 tokensOut = tokensOut,
                 costCents = costCents,

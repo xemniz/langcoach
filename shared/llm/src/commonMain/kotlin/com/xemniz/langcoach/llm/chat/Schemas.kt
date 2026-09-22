@@ -63,9 +63,39 @@ internal fun errorClassificationSchema(allowedCategoryCodes: List<String>): Json
 internal fun summarySchema(): JsonElement = buildJsonObject {
     put("type", "object")
     put("additionalProperties", false)
-    putJsonArray("required") { add("summary") }
+    putJsonArray("required") {
+        add("summary"); add("strength"); add("nextStep"); add("assignment")
+    }
     putJsonObject("properties") {
         putJsonObject("summary") { put("type", "string") }
+        putJsonObject("strength") { put("type", "string") }
+        putJsonObject("nextStep") { put("type", "string") }
+        putJsonObject("assignment") { put("type", "string") }
+    }
+}
+
+internal fun practicalGoalObservationSchema(): JsonElement = buildJsonObject {
+    put("type", "object")
+    put("additionalProperties", false)
+    putJsonArray("required") {
+        add("hasGoal"); add("description"); add("evidenceTurnId"); add("evidenceText"); add("confidence"); add("decision")
+    }
+    putJsonObject("properties") {
+        putJsonObject("hasGoal") { put("type", "boolean") }
+        listOf("description", "evidenceTurnId", "evidenceText").forEach { field ->
+            putJsonObject(field) {
+                putJsonArray("type") { add("string"); add("null") }
+            }
+        }
+        putJsonObject("confidence") {
+            put("type", "number")
+            put("minimum", 0.0)
+            put("maximum", 1.0)
+        }
+        putJsonObject("decision") {
+            put("type", "string")
+            putJsonArray("enum") { add("None"); add("Accept"); add("Defer"); add("Reject") }
+        }
     }
 }
 

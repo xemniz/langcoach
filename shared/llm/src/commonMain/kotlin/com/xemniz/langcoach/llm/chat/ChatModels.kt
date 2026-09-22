@@ -24,7 +24,22 @@ data class VocabExtractionResult(val items: List<ExtractedVocab>)
 data class ErrorClassificationResult(val items: List<ExtractedError>)
 
 @Serializable
-data class SessionSummaryResult(val summary: String)
+data class SessionSummaryResult(
+    val summary: String,
+    val strength: String,
+    val nextStep: String,
+    val assignment: String,
+)
+
+@Serializable
+data class PracticalGoalObservationResult(
+    val hasGoal: Boolean,
+    val description: String?,
+    val evidenceTurnId: String?,
+    val evidenceText: String?,
+    val confidence: Double,
+    val decision: String,
+)
 
 @Serializable
 data class UserModelResult(val content: String)

@@ -2,6 +2,7 @@ package com.xemniz.langcoach.domain.session
 
 import com.xemniz.langcoach.data.prefs.ProfilePrefs
 import com.xemniz.langcoach.data.repo.UserModelRepo
+import com.xemniz.langcoach.data.repo.PracticalGoalStore
 import com.xemniz.langcoach.domain.usecase.GetDueVocab
 import com.xemniz.langcoach.domain.usecase.GetRecentSessions
 import com.xemniz.langcoach.domain.usecase.GetWeakCategories
@@ -17,6 +18,7 @@ class SessionOrchestrator(
     private val getRecentSessions: GetRecentSessions,
     private val userModelRepo: UserModelRepo,
     private val sessionPlanner: SessionPlanner,
+    private val practicalGoals: PracticalGoalStore,
 ) {
     suspend fun prepareSession(): PreparedSession {
         val nativeLang = profilePrefs.nativeLang.first()
@@ -26,6 +28,8 @@ class SessionOrchestrator(
         val weak = getWeakCategories(windowDays = 14, limit = 5)
         val recent = getRecentSessions(limit = 3).reversed()
         val userModel = userModelRepo.getContent()
+        val confirmedGoal = practicalGoals.confirmed(targetLang)
+        val tentativeGoal = practicalGoals.tentative(targetLang)
 
         val learnerMemory = userModel?.takeIf { it.isNotBlank() } ?: ""
         val recentSummaries = recent.mapNotNull { it.summary?.takeIf(String::isNotBlank) }
@@ -54,6 +58,10 @@ class SessionOrchestrator(
                 },
                 learnerMemory = learnerMemory,
                 currentMoment = moment,
+                level = level,
+                confirmedPracticalGoal = confirmedGoal?.description,
+                tentativePracticalGoal = tentativeGoal?.description,
+                priorAssignment = recent.lastOrNull()?.assignment?.takeIf(String::isNotBlank),
             ),
         )
 
@@ -91,6 +99,9 @@ class SessionOrchestrator(
             plan = plan,
             systemPrompt = systemPrompt,
             transcriptionLanguage = transcriptionLanguageCode(targetLang),
+            nativeLanguage = nativeLang,
+            targetLanguage = targetLang,
+            level = level,
         )
     }
 

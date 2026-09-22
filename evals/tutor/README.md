@@ -71,8 +71,9 @@ The runner reads `OPENAI_API_KEY` from the environment or the existing uncommitt
 - No identical question or forbidden generic opening is emitted.
 
 The previous `tutor-v1.0.0` live baseline scored **4.83/5**, passed **12/12** cases,
-and produced **zero hard violations** with `gpt-realtime-2.1`. The new
-`tutor-v1.1.0` session-plan prompt must establish its own reviewed baseline before release.
+and produced **zero hard violations** with `gpt-realtime-2.1`. A 2026-09-22 live run of the
+`tutor-v1.2.0` prepared-lesson prompt scored **4.74/5**, passed **12/12** cases, and produced
+**zero hard violations** with `gpt-realtime-2.1`; its generated result remains a local review artifact.
 
 ## Boundaries
 

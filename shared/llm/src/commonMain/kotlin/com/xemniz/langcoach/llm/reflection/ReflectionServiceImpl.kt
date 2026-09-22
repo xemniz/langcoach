@@ -3,6 +3,9 @@ package com.xemniz.langcoach.llm.reflection
 import com.xemniz.langcoach.core.AppResult
 import com.xemniz.langcoach.domain.reflection.ReflectedError
 import com.xemniz.langcoach.domain.reflection.ReflectedVocab
+import com.xemniz.langcoach.domain.reflection.PracticalGoalObservation
+import com.xemniz.langcoach.domain.reflection.PracticalGoalDecision
+import com.xemniz.langcoach.domain.reflection.PracticalGoalDecisionObservation
 import com.xemniz.langcoach.domain.reflection.ReflectionResult
 import com.xemniz.langcoach.domain.reflection.ReflectionService
 import com.xemniz.langcoach.domain.reflection.SessionTranscript
@@ -13,11 +16,13 @@ import com.xemniz.langcoach.domain.session.SessionPlan
 import com.xemniz.langcoach.llm.chat.ChatCompletionsClient
 import com.xemniz.langcoach.llm.chat.ErrorClassificationResult
 import com.xemniz.langcoach.llm.chat.ObjectiveEvaluationResult
+import com.xemniz.langcoach.llm.chat.PracticalGoalObservationResult
 import com.xemniz.langcoach.llm.chat.SessionSummaryResult
 import com.xemniz.langcoach.llm.chat.UserModelResult
 import com.xemniz.langcoach.llm.chat.VocabExtractionResult
 import com.xemniz.langcoach.llm.chat.errorClassificationSchema
 import com.xemniz.langcoach.llm.chat.objectiveEvaluationSchema
+import com.xemniz.langcoach.llm.chat.practicalGoalObservationSchema
 import com.xemniz.langcoach.llm.chat.summarySchema
 import com.xemniz.langcoach.llm.chat.userModelSchema
 import com.xemniz.langcoach.llm.chat.vocabExtractionSchema
@@ -33,6 +38,7 @@ class ReflectionServiceImpl(
         recentVocab: List<String>,
         transcript: SessionTranscript,
         sessionPlan: SessionPlan?,
+        tentativePracticalGoal: String?,
         allowedCategoryCodes: List<String>,
     ): AppResult<ReflectionResult> {
         val renderedTranscript = transcript.render().ifBlank { "(no conversation captured)" }
@@ -66,7 +72,7 @@ class ReflectionServiceImpl(
         }
 
         val summaryResult = chat.structured(
-            systemPrompt = "You write short, plain-language session summaries for a language learner. About 60 to 100 words, third person, no markdown, no quotes. Mention topic, level of fluency observed, and one or two things to focus on next time.",
+            systemPrompt = "You create an evidence-based lesson record. Write a 60 to 100 word third-person summary plus: one demonstrated strength, one next teaching step, and one small assignment that can be checked independently in the next lesson. Do not claim unobserved mastery. Plain text only.",
             userPrompt = "Native language: $nativeLang. Target language: $targetLang.\n\nTranscript:\n$renderedTranscript",
             schemaName = "session_summary",
             schema = summarySchema(),
@@ -76,6 +82,53 @@ class ReflectionServiceImpl(
             is AppResult.Failure -> return summaryResult
             is AppResult.Success -> summaryResult.value
         }
+
+        val goalResult = chat.structured(
+            systemPrompt = """
+                Identify at most one practical language-learning goal directly supported by a learner turn.
+                A practical goal is a real-world situation where the learner wants or needs to use the target language.
+                An interest, enjoyable topic, passing event, or tutor suggestion is not by itself a goal.
+                Set hasGoal=false unless the learner's own words provide clear evidence. When true, cite the exact
+                learner turn ID and a short exact quote. The description should be concise and action-oriented.
+
+                The current tentative goal is: ${tentativePracticalGoal ?: "(none)"}.
+                If the learner explicitly accepts, rejects, or defers making that goal a direction for future
+                lessons, set decision accordingly and cite that exact learner response. Otherwise use None.
+            """.trimIndent(),
+            userPrompt = "Target language: $targetLang\n\nTranscript:\n$renderedTranscript",
+            schemaName = "practical_goal_observation",
+            schema = practicalGoalObservationSchema(),
+            deserializer = PracticalGoalObservationResult.serializer(),
+        )
+        val goal = when (goalResult) {
+            is AppResult.Failure -> return goalResult
+            is AppResult.Success -> goalResult.value
+        }
+        val practicalGoalObservation = goal.value.takeIf { it.hasGoal }?.let { value ->
+            val description = value.description ?: return@let null
+            val evidenceTurnId = value.evidenceTurnId ?: return@let null
+            val evidenceText = value.evidenceText ?: return@let null
+            PracticalGoalObservation(
+                description = description,
+                evidenceTurnId = evidenceTurnId,
+                evidenceText = evidenceText,
+                confidence = value.confidence.coerceIn(0.0, 1.0),
+            )
+        }
+        val practicalGoalDecision = goal.value.decision
+            .takeIf { it != "None" }
+            ?.let { decision ->
+                val evidenceTurnId = goal.value.evidenceTurnId ?: return@let null
+                val evidenceText = goal.value.evidenceText ?: return@let null
+                val parsed = runCatching { PracticalGoalDecision.valueOf(decision) }.getOrNull()
+                    ?: return@let null
+                PracticalGoalDecisionObservation(
+                    decision = parsed,
+                    evidenceTurnId = evidenceTurnId,
+                    evidenceText = evidenceText,
+                    confidence = goal.value.confidence.coerceIn(0.0, 1.0),
+                )
+            }
 
         val objectiveResult = sessionPlan?.let { plan ->
             chat.structured(
@@ -131,15 +184,20 @@ class ReflectionServiceImpl(
 
         val objectiveTokensIn = (objectiveResult as? AppResult.Success)?.value?.tokensIn ?: 0
         val objectiveTokensOut = (objectiveResult as? AppResult.Success)?.value?.tokensOut ?: 0
-        val tokensIn = vocab.tokensIn + errors.tokensIn + summary.tokensIn + objectiveTokensIn
-        val tokensOut = vocab.tokensOut + errors.tokensOut + summary.tokensOut + objectiveTokensOut
+        val tokensIn = vocab.tokensIn + errors.tokensIn + summary.tokensIn + goal.tokensIn + objectiveTokensIn
+        val tokensOut = vocab.tokensOut + errors.tokensOut + summary.tokensOut + goal.tokensOut + objectiveTokensOut
 
         return AppResult.Success(
             ReflectionResult(
                 newVocab = vocab.value.items.map { ReflectedVocab(it.word, it.lemma, it.context, it.source) },
                 errors = errors.value.items.map { ReflectedError(it.categoryCode, it.originalText, it.correctedText) },
                 summary = summary.value.summary,
+                strength = summary.value.strength,
+                nextStep = summary.value.nextStep,
+                assignment = summary.value.assignment,
                 objectiveEvaluation = objectiveEvaluation,
+                practicalGoalObservation = practicalGoalObservation,
+                practicalGoalDecision = practicalGoalDecision,
                 tokensIn = tokensIn,
                 tokensOut = tokensOut,
             )

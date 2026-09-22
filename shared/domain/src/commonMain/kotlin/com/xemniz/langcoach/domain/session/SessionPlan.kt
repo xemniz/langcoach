@@ -14,21 +14,36 @@ data class SessionPlan(
     val target: String?,
     val openingHint: String,
     val successCriteria: String,
+    val lessonFormat: LessonFormat = LessonFormat.TestTeachTest,
+    val material: String = "Use a short, relevant conversational example.",
+    val supportGuidance: String = "Adjust support from observed performance.",
+    val courseDirection: String? = null,
+    val goalConfirmationPrompt: String? = null,
+    val priorAssignment: String? = null,
 ) {
     fun renderForPrompt(): String = buildString {
         append("Primary objective: ").append(objective).append('\n')
         target?.let { append("Target: ").append(it).append('\n') }
         append("Opening direction: ").append(openingHint).append('\n')
         append("Success evidence: ").append(successCriteria).append('\n')
-        append(
-            "Treat this as a light intention, not a script. Follow a more meaningful learner-led " +
-                "direction when one appears.",
-        )
+        append("Lesson format: ").append(lessonFormat.name).append('\n')
+        append("Prepared material: ").append(material).append('\n')
+        append("Support: ").append(supportGuidance).append('\n')
+        courseDirection?.let { append("Confirmed course direction: ").append(it).append('\n') }
+        goalConfirmationPrompt?.let { append("Tentative goal to confirm naturally: ").append(it).append('\n') }
+        priorAssignment?.let { append("Previous assignment to check: ").append(it).append('\n') }
+        append("Treat the stages as a flexible teaching arc. Follow meaningful learner input while returning to the objective.")
     }
 
     companion object {
         const val VERSION = "session-plan-v1"
     }
+}
+
+enum class LessonFormat {
+    PresentationPracticeProduction,
+    TestTeachTest,
+    TaskBased,
 }
 
 enum class SessionObjectiveKind {
@@ -42,6 +57,7 @@ enum class ObjectiveOutcome {
     Attempted,
     AchievedWithHelp,
     AchievedIndependently,
+    RetainedLater,
 }
 
 fun ObjectiveOutcome.vocabularyReviewRating(): Int? = when (this) {
@@ -49,6 +65,7 @@ fun ObjectiveOutcome.vocabularyReviewRating(): Int? = when (this) {
     ObjectiveOutcome.Attempted -> 1
     ObjectiveOutcome.AchievedWithHelp -> 2
     ObjectiveOutcome.AchievedIndependently -> 3
+    ObjectiveOutcome.RetainedLater -> 3
 }
 
 data class ObjectiveEvaluation(
@@ -62,4 +79,7 @@ data class PreparedSession(
     val plan: SessionPlan,
     val systemPrompt: String,
     val transcriptionLanguage: String?,
+    val nativeLanguage: String,
+    val targetLanguage: String,
+    val level: String,
 )

@@ -20,7 +20,14 @@ sealed interface CallState {
         val isReconnecting: Boolean,
     ) : CallState
     data class Failed(val message: String) : CallState
-    data object Ended : CallState
+    data object ProcessingSummary : CallState
+    data class Ended(
+        val summary: String? = null,
+        val strength: String? = null,
+        val nextStep: String? = null,
+        val assignment: String? = null,
+        val processingError: String? = null,
+    ) : CallState
 }
 
 sealed interface CallIntent {

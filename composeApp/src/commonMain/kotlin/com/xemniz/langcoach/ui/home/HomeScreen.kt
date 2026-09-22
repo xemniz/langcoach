@@ -19,7 +19,6 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,7 +41,6 @@ fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    LaunchedEffect(Unit) { viewModel.refresh() }
 
     Column(
         modifier = Modifier
@@ -124,18 +122,23 @@ fun HomeScreen(
                 ) {
                     Column {
                         Text("TODAY'S PRACTICE", style = MaterialTheme.typography.labelMedium, color = Gold)
-                        Text("Spanish · B2", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                        Text(
+                            "${state.targetLanguage.ifBlank { "Your language" }} · ${state.level.ifBlank { "level unset" }}",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
                     }
                     Box(
                         modifier = Modifier
                             .background(Gold, RoundedCornerShape(99.dp))
                             .padding(horizontal = 12.dp, vertical = 7.dp),
                     ) {
-                        Text("10 min", color = ForestDark, fontWeight = FontWeight.Bold)
+                        Text("up to 60 min", color = ForestDark, fontWeight = FontWeight.Bold)
                     }
                 }
                 Text(
-                    "Focus: natural past tense and telling a story with confidence.",
+                    state.nextStep?.let { "Next focus: $it" }
+                        ?: "A prepared lesson that adapts to what you demonstrate.",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.primaryContainer,
                 )
@@ -175,6 +178,14 @@ fun HomeScreen(
                 MetricCard("${state.weakCount}", "focus areas", Modifier.weight(1f), onProgressClick)
                 MetricCard(formatCost(state.totalCostCents), "AI spend", Modifier.weight(1f), onProgressClick)
             }
+        }
+
+        if (state.lessonsNeedingAttention > 0) {
+            Text(
+                "${state.lessonsNeedingAttention} lesson record needs another processing attempt.",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+            )
         }
 
         Card(

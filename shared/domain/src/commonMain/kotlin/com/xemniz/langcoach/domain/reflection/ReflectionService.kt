@@ -11,6 +11,7 @@ interface ReflectionService {
         recentVocab: List<String>,
         transcript: SessionTranscript,
         sessionPlan: SessionPlan?,
+        tentativePracticalGoal: String?,
         allowedCategoryCodes: List<String>,
     ): AppResult<ReflectionResult>
 

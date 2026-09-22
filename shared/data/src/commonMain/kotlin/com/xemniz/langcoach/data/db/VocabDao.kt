@@ -17,6 +17,9 @@ interface VocabDao {
     @Query("SELECT * FROM vocab_items WHERE dueAt <= :nowMillis ORDER BY dueAt ASC")
     suspend fun getDueItems(nowMillis: Long): List<VocabItem>
 
+    @Query("SELECT * FROM vocab_items WHERE dueAt <= :nowMillis AND targetLang = :targetLang ORDER BY dueAt ASC")
+    suspend fun getDueItemsForLanguage(nowMillis: Long, targetLang: String): List<VocabItem>
+
     @Query("SELECT * FROM vocab_items ORDER BY createdAt DESC")
     fun observeAll(): Flow<List<VocabItem>>
 

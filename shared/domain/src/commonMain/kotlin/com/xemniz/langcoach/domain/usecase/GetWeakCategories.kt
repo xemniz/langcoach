@@ -2,15 +2,17 @@ package com.xemniz.langcoach.domain.usecase
 
 import com.xemniz.langcoach.data.repo.ErrorRepo
 import com.xemniz.langcoach.data.repo.WeakCategory
+import com.xemniz.langcoach.data.prefs.ProfilePrefs
+import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 
-class GetWeakCategories(private val repo: ErrorRepo) {
+class GetWeakCategories(private val repo: ErrorRepo, private val profilePrefs: ProfilePrefs) {
     suspend operator fun invoke(
         windowDays: Int = 14,
         limit: Int = 5,
         nowMillis: Long = Clock.System.now().toEpochMilliseconds(),
     ): List<WeakCategory> {
         val sinceMillis = nowMillis - windowDays * 86_400_000L
-        return repo.weakCategories(sinceMillis, limit)
+        return repo.weakCategories(sinceMillis, profilePrefs.targetLang.first(), limit)
     }
 }

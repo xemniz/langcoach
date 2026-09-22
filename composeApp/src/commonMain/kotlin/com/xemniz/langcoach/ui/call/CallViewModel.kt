@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.xemniz.langcoach.core.AppResult
 import com.xemniz.langcoach.di.AppScope
+import com.xemniz.langcoach.data.repo.SessionRepo
 import com.xemniz.langcoach.domain.reflection.SessionTranscript
 import com.xemniz.langcoach.domain.reflection.TranscriptSpeaker
 import com.xemniz.langcoach.domain.reflection.TranscriptTurn
@@ -26,11 +27,13 @@ class CallViewModel internal constructor(
     private val reflectSession: ReflectSession,
     private val appScope: AppScope,
     private val callSessionLifecycle: CallSessionLifecycle,
+    private val sessions: SessionRepo,
 ) : ViewModel() {
     private val _state = MutableStateFlow<CallState>(CallState.Idle)
     val state: StateFlow<CallState> = _state.asStateFlow()
 
     private var sessionId: Long? = null
+    private var ending = false
 
     init {
         viewModelScope.launch {
@@ -54,6 +57,7 @@ class CallViewModel internal constructor(
     private fun connect() {
         if (_state.value is CallState.Live || _state.value is CallState.Connecting) return
         sessionId = null
+        ending = false
         _state.value = CallState.Connecting
         callSessionLifecycle.start()
         viewModelScope.launch {
@@ -66,7 +70,7 @@ class CallViewModel internal constructor(
                 is AppResult.Failure -> failCall(result.error.message)
                 is AppResult.Success -> {
                     val newId = runCatching {
-                        startSession(preparedSession.plan)
+                        startSession(preparedSession)
                     }.getOrElse { error ->
                         coordinator.stop()
                         failCall(error.message ?: "Could not create the practice session")
@@ -144,41 +148,62 @@ class CallViewModel internal constructor(
 
     private fun failCall(message: String) {
         if (_state.value is CallState.Failed || _state.value is CallState.Ended) return
+        val interrupted = _state.value as? CallState.Live
+        val interruptedSessionId = sessionId
         _state.value = CallState.Failed(message)
         viewModelScope.launch {
-            runCatching { coordinator.stop() }
+            val usage = runCatching { coordinator.stop() }.getOrNull()
             runCatching { callSessionLifecycle.stop() }
+            if (interrupted != null && interruptedSessionId != null && usage != null) {
+                val transcript = renderTranscript(interrupted.messages)
+                runCatching {
+                    finishSession(
+                        sessionId = interruptedSessionId,
+                        tokensIn = usage.tokensIn,
+                        tokensOut = usage.tokensOut,
+                        transcript = transcript,
+                    )
+                    appScope.scope.launch { reflectSession(interruptedSessionId) }
+                }
+            }
         }
     }
 
     private fun end() {
-        val current = _state.value
-        val transcript = if (current is CallState.Live) {
-            renderTranscript(current.messages)
-        } else {
-            SessionTranscript(emptyList())
-        }
+        if (ending) return
+        ending = true
         viewModelScope.launch {
             val usage = coordinator.stop()
             callSessionLifecycle.stop()
+            val current = _state.value
+            val transcript = if (current is CallState.Live) {
+                renderTranscript(current.messages)
+            } else {
+                SessionTranscript(emptyList())
+            }
             val id = sessionId
             if (id != null) {
                 finishSession(
                     sessionId = id,
                     tokensIn = usage.tokensIn,
                     tokensOut = usage.tokensOut,
+                    transcript = transcript,
                 )
-                _state.value = CallState.Ended
+                _state.value = CallState.ProcessingSummary
                 appScope.scope.launch {
-                    runCatching {
-                        reflectSession(
-                            sessionId = id,
-                            transcript = transcript,
-                        )
-                    }
+                    val result = reflectSession(sessionId = id)
+                    val lesson = sessions.byId(id)
+                    _state.value = CallState.Ended(
+                        summary = lesson?.summary,
+                        strength = lesson?.strength,
+                        nextStep = lesson?.nextStep,
+                        assignment = lesson?.assignment,
+                        processingError = (result as? AppResult.Failure)?.error?.message
+                            ?: lesson?.processingError,
+                    )
                 }
             } else {
-                _state.value = CallState.Ended
+                _state.value = CallState.Ended()
             }
         }
     }

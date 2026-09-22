@@ -69,8 +69,23 @@ internal fun CallScreenContent(
                 Text(state.message, color = MaterialTheme.colorScheme.error)
                 FilledTonalButton(onClick = onDone) { Text("Back") }
             }
-            CallState.Ended -> {
-                Text("Session ended.", style = MaterialTheme.typography.titleMedium)
+            CallState.ProcessingSummary -> {
+                Text("Saving your lesson…", style = MaterialTheme.typography.titleMedium)
+                Text("The coach is recording what you demonstrated and preparing the next step.")
+                CircularProgressIndicator()
+            }
+            is CallState.Ended -> {
+                Text("Lesson recap", style = MaterialTheme.typography.titleMedium)
+                state.summary?.let { Text(it) }
+                state.strength?.let { Text("Demonstrated: $it") }
+                state.nextStep?.let { Text("Next step: $it") }
+                state.assignment?.let { Text("Before next time: $it") }
+                state.processingError?.let {
+                    Text(
+                        "The lesson was saved, but its recap needs another processing attempt: $it",
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
                 Button(onClick = onDone) { Text("Done") }
             }
         }

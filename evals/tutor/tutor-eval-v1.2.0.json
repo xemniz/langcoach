@@ -1,7 +1,7 @@
 {
   "version": "tutor-eval-v1.2.0",
-  "prompt_version": "tutor-v1.1.0",
-  "prompt_sha256": "b9ec90165f40f48a0aefde28d39c9a073d82a2486cd10f61f88779bb9c4b9645",
+  "prompt_version": "tutor-v1.2.0",
+  "prompt_sha256": "12a9a6045ff5704bdcf70f8eaf3266b0eb06c5f2690df6c78d889dbedc976f5a",
   "description": "Scripted Spanish B1 conversations covering engagement, selective correction, learner memory, retrieval, activity variety, and non-repetition.",
   "pass_policy": {
     "minimum_case_score": 3.5,
