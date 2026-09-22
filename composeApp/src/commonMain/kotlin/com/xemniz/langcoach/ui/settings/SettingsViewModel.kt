@@ -40,8 +40,10 @@ class SettingsViewModel(
         }
         viewModelScope.launch {
             val existing = secureStorage.read(OPENAI_API_KEY)
-            if (!existing.isNullOrEmpty()) {
-                _state.update { it.copy(apiKey = maskKey(existing)) }
+            _state.update {
+                it.copy(
+                    hasApiKey = !existing.isNullOrBlank(),
+                )
             }
         }
     }
@@ -50,6 +52,7 @@ class SettingsViewModel(
         when (intent) {
             is SettingsIntent.ApiKeyChanged -> _state.update { it.copy(apiKey = intent.value, verifyMessage = null) }
             SettingsIntent.VerifyAndSaveKey -> verifyAndSave()
+            SettingsIntent.RemoveApiKey -> removeApiKey()
             is SettingsIntent.NativeLangChanged -> {
                 _state.update { it.copy(nativeLang = intent.value) }
                 viewModelScope.launch { profilePrefs.setNativeLang(intent.value) }
@@ -77,21 +80,38 @@ class SettingsViewModel(
                         isVerifying = false,
                         verifyMessage = "Verified",
                         verifySuccess = true,
-                        apiKey = maskKey(key),
+                        apiKey = "",
+                        hasApiKey = true,
                     )
-                    is AppResult.Failure -> it.copy(
-                        isVerifying = false,
-                        verifyMessage = result.error.message,
-                        verifySuccess = false,
-                    )
+                    is AppResult.Failure -> {
+                        val error = result.error
+                        it.copy(
+                            isVerifying = false,
+                            verifyMessage = if (error is com.xemniz.langcoach.core.AppError.Api && error.code == 401) {
+                                "That API key wasn't accepted."
+                            } else {
+                                "Couldn't verify the key. Check your connection and try again."
+                            },
+                            verifySuccess = false,
+                        )
+                    }
                 }
             }
         }
     }
 
-    private fun maskKey(key: String): String {
-        val tail = key.takeLast(4)
-        return "sk-...$tail"
+    private fun removeApiKey() {
+        viewModelScope.launch {
+            secureStorage.delete(OPENAI_API_KEY)
+            _state.update {
+                it.copy(
+                    apiKey = "",
+                    hasApiKey = false,
+                    verifyMessage = "API key removed",
+                    verifySuccess = true,
+                )
+            }
+        }
     }
 
     companion object {

@@ -1,8 +1,6 @@
 package com.xemniz.langcoach.ui.home
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +17,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,7 +25,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.xemniz.langcoach.ui.theme.ForestDark
-import com.xemniz.langcoach.ui.theme.Forest
 import com.xemniz.langcoach.ui.theme.Gold
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -34,13 +32,13 @@ import org.koin.compose.viewmodel.koinViewModel
 fun HomeScreen(
     onSettingsClick: () -> Unit,
     onStartSession: () -> Unit,
-    onDemoClick: () -> Unit,
     onVocabClick: () -> Unit,
     onProgressClick: () -> Unit,
     onCoachMemoryClick: () -> Unit,
     viewModel: HomeViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { viewModel.refresh() }
 
     Column(
         modifier = Modifier
@@ -55,13 +53,13 @@ fun HomeScreen(
         ) {
             Column {
                 Text(
-                    "LANGCOACH",
+                    "LangCoach",
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    "Ready to speak?",
+                    if (state.profileConfigured) "Ready to practise?" else "Set up your practice",
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
                 )
@@ -69,152 +67,128 @@ fun HomeScreen(
             FilledTonalButton(onClick = onSettingsClick) { Text("Settings") }
         }
 
-        if (!state.hasApiKey) {
+        if (!state.profileConfigured) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(18.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = ForestDark,
                 ),
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .background(Forest, RoundedCornerShape(12.dp))
-                            .padding(horizontal = 11.dp, vertical = 8.dp),
-                    ) {
-                        Text("KEY", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Choose the language you want to practise and your current level.",
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Button(onClick = onSettingsClick) {
+                        Text("Choose languages")
                     }
-                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                        Text("Connect OpenAI", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+            }
+        } else {
+            if (!state.hasApiKey) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                    onClick = onSettingsClick,
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text("Connect voice lessons", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         Text(
-                            "Add your API key for live voice sessions. It stays encrypted on this device.",
-                            style = MaterialTheme.typography.bodySmall,
+                            "Add an OpenAI API key to start speaking practice.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    Button(onClick = onSettingsClick) { Text("Add key") }
                 }
             }
-        }
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = ForestDark,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            ),
-        ) {
-            Column(
-                modifier = Modifier.padding(22.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = ForestDark,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+                Column(
+                    modifier = Modifier.padding(22.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    Column {
-                        Text("TODAY'S PRACTICE", style = MaterialTheme.typography.labelMedium, color = Gold)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column {
+                            Text("NEXT LESSON", style = MaterialTheme.typography.labelMedium, color = Gold)
+                            Text(
+                                state.targetLanguage,
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
                         Text(
-                            "${state.targetLanguage.ifBlank { "Your language" }} · ${state.level.ifBlank { "level unset" }}",
-                            style = MaterialTheme.typography.headlineMedium,
+                            state.level.name,
+                            color = Gold,
                             fontWeight = FontWeight.Bold,
                         )
                     }
-                    Box(
-                        modifier = Modifier
-                            .background(Gold, RoundedCornerShape(99.dp))
-                            .padding(horizontal = 12.dp, vertical = 7.dp),
+                    Text(
+                        state.nextStep ?: "Start with a conversation and your tutor will plan what to practise next.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                    )
+                    Button(
+                        onClick = if (state.hasApiKey) onStartSession else onSettingsClick,
+                        modifier = Modifier.fillMaxWidth().height(54.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Gold,
+                            contentColor = ForestDark,
+                        ),
                     ) {
-                        Text("up to 60 min", color = ForestDark, fontWeight = FontWeight.Bold)
+                        Text(
+                            if (state.hasApiKey) "Start lesson" else "Add API key",
+                            fontWeight = FontWeight.Bold,
+                        )
                     }
                 }
-                Text(
-                    state.nextStep?.let { "Next focus: $it" }
-                        ?: "A prepared lesson that adapts to what you demonstrate.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                )
-                Button(
-                    onClick = if (state.hasApiKey) onStartSession else onSettingsClick,
-                    modifier = Modifier.fillMaxWidth().height(54.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Gold,
-                        contentColor = ForestDark,
-                    ),
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Keep practising", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
+                    MetricCard("${state.dueCount}", "words to review", Modifier.weight(1f), onVocabClick)
+                    MetricCard("${state.weakCount}", "practice areas", Modifier.weight(1f), onProgressClick)
+                }
+            }
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                onClick = onCoachMemoryClick,
+            ) {
+                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text("What your tutor remembers", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Text(
-                        if (state.hasApiKey) "Start conversation" else "Add key to start live",
-                        fontWeight = FontWeight.Bold,
+                        "Review your goals, tutor notes, and recent lessons.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                FilledTonalButton(
-                    onClick = onDemoClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.filledTonalButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = ForestDark,
-                    ),
-                ) {
-                    Text("Play portfolio demo")
-                }
             }
+            Spacer(Modifier.weight(1f))
         }
-
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Your learning loop", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                MetricCard("${state.dueCount}", "due today", Modifier.weight(1f), onVocabClick)
-                MetricCard("${state.weakCount}", "focus areas", Modifier.weight(1f), onProgressClick)
-                MetricCard(
-                    if (state.totalTokens > 0 && state.totalCostCents == 0) "—"
-                    else formatCost(state.totalCostCents),
-                    "cost estimate",
-                    Modifier.weight(1f),
-                    onProgressClick,
-                )
-            }
-        }
-
-        if (state.lessonsNeedingAttention > 0) {
-            Text(
-                "${state.lessonsNeedingAttention} lesson record needs another processing attempt.",
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            onClick = onCoachMemoryClick,
-        ) {
-            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                Text("Private coach memory", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(
-                    "See exactly what your coach remembers. Stored on this device and always editable.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        Spacer(Modifier.weight(1f))
-        Text(
-            "Voice practice that remembers what matters—not everything.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-        )
     }
 }
 
@@ -237,5 +211,3 @@ private fun MetricCard(
         }
     }
 }
-
-private fun formatCost(cents: Int): String = if (cents == 0) "$0.00" else "$${cents / 100}.${(cents % 100).toString().padStart(2, '0')}"

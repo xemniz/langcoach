@@ -13,8 +13,8 @@ class ProfilePrefsImpl(private val dataStore: DataStore<Preferences>) : ProfileP
     private val targetLangKey = stringPreferencesKey("target_lang")
     private val levelKey = stringPreferencesKey("level")
 
-    override val nativeLang: Flow<String> = dataStore.data.map { it[nativeLangKey] ?: "English" }
-    override val targetLang: Flow<String> = dataStore.data.map { it[targetLangKey] ?: "Italian" }
+    override val nativeLang: Flow<String> = dataStore.data.map { it[nativeLangKey].orEmpty() }
+    override val targetLang: Flow<String> = dataStore.data.map { it[targetLangKey].orEmpty() }
     override val level: Flow<ProfileLevel> = dataStore.data.map {
         runCatching { ProfileLevel.valueOf(it[levelKey] ?: "Unknown") }
             .getOrDefault(ProfileLevel.Unknown)

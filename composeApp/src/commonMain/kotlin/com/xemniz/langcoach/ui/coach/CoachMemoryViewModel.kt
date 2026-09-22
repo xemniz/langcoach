@@ -8,6 +8,8 @@ import com.xemniz.langcoach.data.repo.SessionRepo
 import com.xemniz.langcoach.data.prefs.ProfilePrefs
 import com.xemniz.langcoach.domain.usecase.PracticalGoalResponse
 import com.xemniz.langcoach.domain.usecase.RecordPracticalGoal
+import com.xemniz.langcoach.domain.usecase.RecoverInterruptedLessonRecaps
+import com.xemniz.langcoach.domain.usecase.RetryLessonRecap
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,6 +24,8 @@ class CoachMemoryViewModel(
     private val recordPracticalGoal: RecordPracticalGoal,
     private val sessions: SessionRepo,
     private val profilePrefs: ProfilePrefs,
+    private val retryLessonRecapUseCase: RetryLessonRecap,
+    private val recoverInterruptedLessonRecaps: RecoverInterruptedLessonRecaps,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CoachMemoryState())
@@ -34,7 +38,26 @@ class CoachMemoryViewModel(
             val targetLang = profilePrefs.targetLang.first()
             val record = userModelRepo.get(targetLang)
             val goals = practicalGoals.all()
-            val recentLessons = sessions.recent(limit = 5)
+            recoverInterruptedLessonRecaps()
+            val recentLessons = sessions.recent(limit = 5).map { lesson ->
+                RecentLesson(
+                    id = lesson.id,
+                    startedAt = lesson.startedAt,
+                    targetLanguage = lesson.targetLang,
+                    summary = lesson.summary,
+                    strength = lesson.strength,
+                    nextStep = lesson.nextStep,
+                    assignment = lesson.assignment,
+                    recapStatus = when (lesson.processingState) {
+                        "Completed" -> LessonRecapStatus.Ready
+                        "Pending" -> LessonRecapStatus.Queued
+                        "Processing" -> LessonRecapStatus.Preparing
+                        "Failed" -> LessonRecapStatus.Failed
+                        "Discarded" -> LessonRecapStatus.Removed
+                        else -> LessonRecapStatus.None
+                    },
+                )
+            }
             _state.update {
                 it.copy(
                     content = record?.content.orEmpty(),
@@ -42,6 +65,7 @@ class CoachMemoryViewModel(
                     loading = false,
                     goals = goals,
                     recentLessons = recentLessons,
+                    retryingLessonId = null,
                 )
             }
         }
@@ -80,6 +104,15 @@ class CoachMemoryViewModel(
     fun discardLessonTranscript(sessionId: Long) {
         viewModelScope.launch {
             sessions.discardPendingTranscript(sessionId)
+            load()
+        }
+    }
+
+    fun retryLessonRecap(sessionId: Long) {
+        if (_state.value.retryingLessonId != null) return
+        _state.update { it.copy(retryingLessonId = sessionId) }
+        viewModelScope.launch {
+            retryLessonRecapUseCase(sessionId)
             load()
         }
     }

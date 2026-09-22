@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -14,6 +15,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -37,33 +39,82 @@ fun SettingsScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("OpenAI API Key", style = MaterialTheme.typography.titleMedium)
+        Text("Learning preferences", style = MaterialTheme.typography.titleLarge)
+        Text(
+            "Tell your tutor what you speak and what you want to practise.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        OutlinedTextField(
+            value = state.nativeLang,
+            onValueChange = { viewModel.onIntent(SettingsIntent.NativeLangChanged(it)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            label = { Text("Language you already speak") },
+        )
+
+        OutlinedTextField(
+            value = state.targetLang,
+            onValueChange = { viewModel.onIntent(SettingsIntent.TargetLangChanged(it)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            label = { Text("Language you want to practise") },
+        )
+
+        Text("Current level", style = MaterialTheme.typography.titleMedium)
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            ProfileLevel.entries.filter { it != ProfileLevel.Unknown }.forEach { level ->
+                FilterChip(
+                    selected = state.level == level,
+                    onClick = { viewModel.onIntent(SettingsIntent.LevelChanged(level)) },
+                    label = { Text(level.name) },
+                )
+            }
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+        Text("Voice service", style = MaterialTheme.typography.titleLarge)
+        Text(
+            if (state.hasApiKey) "OpenAI is connected." else "Connect OpenAI to start voice lessons.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         OutlinedTextField(
             value = state.apiKey,
             onValueChange = { viewModel.onIntent(SettingsIntent.ApiKeyChanged(it)) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
-            label = { Text("sk-...") },
+            label = { Text(if (state.hasApiKey) "Replace API key" else "OpenAI API key") },
         )
         Text(
-            "BYO key — never leaves your device",
+            "Stored securely on this device and sent only to OpenAI.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        Button(
-            onClick = { viewModel.onIntent(SettingsIntent.VerifyAndSaveKey) },
-            enabled = !state.isVerifying,
-        ) {
-            if (state.isVerifying) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(18.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                )
-            } else {
-                Text("Verify & Save")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(
+                onClick = { viewModel.onIntent(SettingsIntent.VerifyAndSaveKey) },
+                enabled = !state.isVerifying && state.apiKey.isNotBlank(),
+            ) {
+                if (state.isVerifying) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                } else {
+                    Text("Verify and save")
+                }
+            }
+            if (state.hasApiKey) {
+                OutlinedButton(onClick = { viewModel.onIntent(SettingsIntent.RemoveApiKey) }) {
+                    Text("Remove key")
+                }
             }
         }
 
@@ -76,38 +127,5 @@ fun SettingsScreen(
             )
         }
 
-        HorizontalDivider()
-
-        Text("Native Language", style = MaterialTheme.typography.titleMedium)
-        OutlinedTextField(
-            value = state.nativeLang,
-            onValueChange = { viewModel.onIntent(SettingsIntent.NativeLangChanged(it)) },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            label = { Text("e.g. English") },
-        )
-
-        Text("Target Language", style = MaterialTheme.typography.titleMedium)
-        OutlinedTextField(
-            value = state.targetLang,
-            onValueChange = { viewModel.onIntent(SettingsIntent.TargetLangChanged(it)) },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            label = { Text("e.g. Italian") },
-        )
-
-        Text("Level", style = MaterialTheme.typography.titleMedium)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            ProfileLevel.entries.forEach { level ->
-                FilterChip(
-                    selected = state.level == level,
-                    onClick = { viewModel.onIntent(SettingsIntent.LevelChanged(level)) },
-                    label = { Text(level.name) },
-                )
-            }
-        }
     }
 }

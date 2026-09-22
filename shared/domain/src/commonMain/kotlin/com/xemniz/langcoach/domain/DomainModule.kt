@@ -11,9 +11,8 @@ import com.xemniz.langcoach.domain.usecase.GetWeakCategories
 import com.xemniz.langcoach.domain.usecase.ReflectSession
 import com.xemniz.langcoach.domain.usecase.RecordPracticalGoal
 import com.xemniz.langcoach.domain.usecase.LessonReflectionProcessor
-import com.xemniz.langcoach.domain.usecase.PendingLessons
-import com.xemniz.langcoach.domain.usecase.ProcessPendingLessons
-import com.xemniz.langcoach.domain.usecase.SessionPendingLessons
+import com.xemniz.langcoach.domain.usecase.RecoverInterruptedLessonRecaps
+import com.xemniz.langcoach.domain.usecase.RetryLessonRecap
 import com.xemniz.langcoach.domain.usecase.ScheduleVocabReview
 import com.xemniz.langcoach.domain.usecase.StartSession
 import com.xemniz.langcoach.domain.usecase.UpdateUserModel
@@ -36,8 +35,8 @@ val domainModule = module {
     factoryOf(::FinishSession)
     singleOf(::ReflectSession)
     single<LessonReflectionProcessor> { get<ReflectSession>() }
-    single<PendingLessons> { SessionPendingLessons(get()) }
-    factoryOf(::ProcessPendingLessons)
+    singleOf(::RecoverInterruptedLessonRecaps)
+    factoryOf(::RetryLessonRecap)
     factoryOf(::RecordPracticalGoal)
     factoryOf(::UpdateUserModel)
 }

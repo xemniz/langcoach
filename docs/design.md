@@ -1,6 +1,6 @@
 # LangCoach — Design History
 
-This doc captures *why* we made the architecture choices in `CLAUDE.md`.
+This doc captures the reasoning behind the app's architecture choices.
 If you're tempted to suggest changing one of these, read the corresponding
 section first.
 
@@ -23,13 +23,12 @@ Most others fail in one of two ways:
 - **Privacy** — your mistake history never leaves your phone.
 - **Cost** — user pays inference directly, ~$5/month real usage vs $15/mo
   subscription.
-- **Transparency** — show the user exactly what's tracked, what each call
-  costs, what the system prompt looks like.
-- **Audience** — devs, polyglots, privacy-conscious learners. Smaller
-  market, but underserved.
+- **Transparency** — learners can review and edit the local notes and goals
+  used to plan future lessons.
+- **Audience** — independent and privacy-conscious language learners.
 
-We are **not** trying to beat Langua on conversation polish. We are
-making the version a developer would want to use.
+The learner-facing app stays focused on lessons and progress. Provider,
+protocol, token, and processing details remain internal.
 
 ## Why OpenAI first (not multi-provider, not Anthropic)
 
@@ -63,8 +62,8 @@ BYO-key, the user already paid OpenAI. Inserting a backend would mean:
 So: zero backend in MVP. Sync, multi-device, social features all need
 backend later — but not for proving the product.
 
-Trade-off: no telemetry, no remote configuration, no server-side eval
-of agent quality. We accept this for now.
+Trade-off: no telemetry, no remote configuration, and no server-side tutor
+quality evaluation. We accept this for now.
 
 ## Why on-device memory specifically
 
@@ -81,46 +80,31 @@ and those go directly to OpenAI.
 
 If we ever add cloud sync, it must be opt-in and end-to-end encrypted.
 
-## Why AndroidX everywhere instead of JetBrains alternatives
+## Why AndroidX storage and lifecycle with simple navigation
 
 JetBrains stack option (rejected): Decompose for navigation, SQLDelight
 for DB, Voyager for screens.
 
-AndroidX stack (chosen): Navigation 3, Room 3, AndroidX ViewModel —
-all KMP-stable as of late 2025 / early 2026.
+The shared app uses Room and AndroidX ViewModel. Navigation is a small typed
+back stack owned by the Compose UI; the current screen count does not justify
+another navigation dependency.
 
 Reasons:
 
-- **Google alignment.** The user is a senior Android dev; AndroidX is
-  what teammates and recruiters know.
 - **Future Jetpack libs** land in AndroidX first, get KMP support
   added soon after. We want to be on the train, not catching up.
-- **Same code Android engineers write at Google.** Just in `commonMain`.
+- **Low navigation complexity.** The app has a shallow hierarchy and no
+  deep links, nested graphs, or shared-element transitions.
 
 What we lose:
 
-- **Decompose** has more rigorous lifecycle handling for complex screens.
-  Nav 3 is fine for our 5–7 screens; reassess if we hit a wall.
+- **Decompose and Navigation 3** offer more rigorous lifecycle and graph
+  handling. Reassess when the route hierarchy becomes materially deeper.
 - **SQLDelight** has been KMP-stable longer than Room 3. Room 3 has been
   stable long enough by now.
 
-If AndroidX KMP support degrades or we hit a real blocker, we revisit.
-Until then, go with the official Google story.
-
-## Why Koog (and how much of it)
-
-Koog is JetBrains' Kotlin agent framework. It's KMP-native, integrates
-with major LLM providers, and provides clean abstractions for tools and
-agent loops.
-
-We use Koog for **post-session work only**:
-- Reflection (transcript → vocab + errors + summary)
-- Error classification against the taxonomy
-- Vocab extraction with lemmatization
-
-We do **not** use Koog on the realtime voice hot path, because OpenAI
-Realtime has its own server-side state machine and tool dispatch. Layering
-Koog on top adds complexity without benefit.
+If AndroidX KMP support degrades or the manual back stack becomes hard to
+reason about, revisit the choice.
 
 ## Why FSRS (not SM-2, not custom)
 
@@ -131,8 +115,8 @@ Kotlin (~150 lines).
 SM-2 is older and less accurate. A custom scheduler is reinventing the
 wheel.
 
-The agent calls `mark_recalled(item_id, grade)` after a vocab use; the
-FSRS scheduler computes the new interval; that's it.
+Post-lesson reflection records retrieval evidence and the FSRS scheduler
+computes the next review interval.
 
 ## Why no on-device LLM (yet)
 
@@ -175,8 +159,8 @@ For 1:1 BYO-key voice tutoring, it's overkill.
 3. **Error taxonomy size.** 300 categories per language is a guess.
    Might be 100, might be 800. Build for one language (Spanish) first,
    measure, then generalize.
-4. **Realtime cost ceiling.** OpenAI Realtime is not cheap. Build the
-   UsageLedger early so the user sees what they spend.
+4. **Realtime cost ceiling.** OpenAI Realtime is not cheap. Keep the
+   internal UsageLedger accurate so future product decisions can use real usage data.
 5. **Pronunciation feedback.** Out of scope for MVP. If we add it, it's
    a separate model (Azure Speech assessment, or Whisper + phoneme
    alignment). LLMs alone can't do this from a transcript.

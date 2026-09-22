@@ -6,21 +6,14 @@ LangCoach is a Kotlin Multiplatform app for real-time language practice on Andro
 iOS. It turns each conversation into vocabulary, recurring-error insights, and context
 for the next lesson.
 
-<p align="center">
-  <img src="docs/media/home.png" width="30%" alt="LangCoach home screen">
-  <img src="docs/media/demo-call.png" width="30%" alt="Language coaching conversation with a live transcript">
-  <img src="docs/media/session-recap.png" width="30%" alt="Session recap with feedback and saved vocabulary">
-</p>
-
 ## Highlights
 
 - Real-time voice sessions with live, speaker-aware transcripts
 - Post-session reflection, corrections, vocabulary review, and next-session planning
-- Local Room database with editable coach memory and visible estimated API cost
+- Local Room database with editable tutor notes and learner-controlled goals
 - Shared Compose UI, domain logic, persistence, and model protocols
 - Native Android audio with foreground-service support
 - Native iOS audio through AVAudioEngine and secure Keychain storage
-- Offline deterministic demo that requires no API key
 - Versioned tutor prompts and a 12-case quality evaluation suite
 
 ## Architecture
@@ -39,19 +32,16 @@ flowchart LR
     Memory --> Session
 ```
 
-More detail is available in [architecture notes](docs/design.md), the
-[demo walkthrough](docs/demo-script.md), and [tutor evaluation](docs/tutor-quality.md).
+More detail is available in the [architecture notes](docs/design.md) and
+[tutor evaluation](docs/tutor-quality.md).
 
 ## Run
 
-For the offline demo, open the project in Android Studio, run `androidApp`, and tap
-**Play portfolio demo**.
+Open the project in Android Studio and run `androidApp`. On iOS, open
+`iosApp/iosApp.xcodeproj` in Xcode and run the `iosApp` scheme.
 
-For iOS, open `iosApp/iosApp.xcodeproj` in Xcode, select the `iosApp` scheme, and run it
-on an iPhone simulator or device.
-
-For a real voice session, add an OpenAI API key in **Settings**. The key remains in
-platform secure storage and is never committed to the repository.
+Choose your languages and level in **Settings**, then add an OpenAI API key for voice
+lessons. The key remains in platform secure storage and is sent directly to OpenAI.
 
 Completed voice-session transcripts remain in the local database. With a debuggable
 Android build connected and authorized over USB, download the latest transcript as

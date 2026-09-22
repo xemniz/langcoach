@@ -853,8 +853,7 @@ These are separate implementation tasks and don't block the engine work.
 
 ## 16. Testing strategy
 
-Since the project currently has no tests (per CLAUDE.md — tests start week 3),
-this section describes what to test once the test infrastructure is in place:
+Extend the existing unit-test suite with coverage for these behavioral seams:
 
 1. **Engagement scoring math**: unit test the composite score formula with
    known inputs.

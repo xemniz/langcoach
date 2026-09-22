@@ -62,27 +62,27 @@ internal fun CallScreenContent(
             is CallState.Live -> LiveContent(state, onIntent)
             is CallState.Failed -> {
                 Text(
-                    "Couldn't start session",
+                    "The lesson couldn't continue",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.error,
                 )
-                Text(state.message, color = MaterialTheme.colorScheme.error)
+                Text("Check your connection and try again.")
                 FilledTonalButton(onClick = onDone) { Text("Back") }
             }
             CallState.ProcessingSummary -> {
-                Text("Saving your lesson…", style = MaterialTheme.typography.titleMedium)
-                Text("The coach is recording what you demonstrated and preparing the next step.")
+                Text("Preparing your recap…", style = MaterialTheme.typography.titleMedium)
+                Text("Your tutor is saving useful notes and planning what to practise next.")
                 CircularProgressIndicator()
             }
             is CallState.Ended -> {
                 Text("Lesson recap", style = MaterialTheme.typography.titleMedium)
                 state.summary?.let { Text(it) }
-                state.strength?.let { Text("Demonstrated: $it") }
-                state.nextStep?.let { Text("Next step: $it") }
+                state.strength?.let { Text("What went well: $it") }
+                state.nextStep?.let { Text("Next lesson: $it") }
                 state.assignment?.let { Text("Before next time: $it") }
-                state.processingError?.let {
+                if (state.processingError != null) {
                     Text(
-                        "The lesson was saved, but its recap needs another processing attempt: $it",
+                        "Your lesson was saved, but the recap isn't ready. You can retry it from Tutor notes.",
                         color = MaterialTheme.colorScheme.error,
                     )
                 }

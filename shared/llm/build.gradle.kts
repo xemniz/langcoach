@@ -40,7 +40,6 @@ kotlin {
 
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)
-            implementation(libs.koog.agents) // Koog iOS native not stable yet
         }
 
         iosMain.dependencies {

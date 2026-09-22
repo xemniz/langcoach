@@ -23,7 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import org.koin.compose.viewmodel.koinViewModel
 import com.xemniz.langcoach.data.db.PracticalGoalStatus
 import com.xemniz.langcoach.domain.usecase.PracticalGoalResponse
@@ -52,7 +52,7 @@ fun CoachMemoryScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            "This is what the coach remembers about you. Edit or delete anything you want changed.",
+            "These notes help your tutor prepare future lessons. You can change or clear them at any time.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -63,12 +63,12 @@ fun CoachMemoryScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 240.dp),
-            label = { Text("What the coach knows") },
+            label = { Text("Tutor notes") },
         )
 
         state.updatedAt?.let { ts ->
             Text(
-                "Last updated: ${formatTimestamp(ts)}",
+                "Updated ${formatTimestamp(ts)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -94,14 +94,14 @@ fun CoachMemoryScreen(
                 onClick = { viewModel.clear() },
                 enabled = !state.saving,
             ) {
-                Text("Clear")
+                Text("Clear notes")
             }
         }
 
-        Text("Practical goals", style = MaterialTheme.typography.titleLarge)
+        Text("Your goals", style = MaterialTheme.typography.titleLarge)
         if (state.goals.none { it.status != PracticalGoalStatus.Rejected }) {
             Text(
-                "The coach will infer possible real-world goals from your conversations and ask before changing your course.",
+                "When your tutor notices a real-world goal, you'll be asked before it shapes future lessons.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -114,43 +114,51 @@ fun CoachMemoryScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
-                        "${goal.targetLang} · ${goal.status.name}",
+                        if (goal.status == PracticalGoalStatus.Confirmed) {
+                            "${goal.targetLang} · Active goal"
+                        } else {
+                            "${goal.targetLang} · Suggested goal"
+                        },
                         style = MaterialTheme.typography.labelLarge,
                     )
                     OutlinedTextField(
                         value = goal.description,
                         onValueChange = { viewModel.onGoalDescriptionChange(goal.id, it) },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("What you want to do with the language") },
+                        label = { Text("What you want to do") },
                     )
                     Text(
-                        "From your words: “${goal.evidenceText}”",
+                        "Based on: “${goal.evidenceText}”",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = { viewModel.saveGoal(goal.id) }) { Text("Save") }
-                        if (goal.status != PracticalGoalStatus.Confirmed) {
-                            Button(
-                                onClick = {
-                                    viewModel.respondToGoal(goal.id, PracticalGoalResponse.Accept)
-                                },
-                            ) { Text("Use for my course") }
-                        }
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (goal.status != PracticalGoalStatus.Confirmed) {
+                    if (goal.status != PracticalGoalStatus.Confirmed) {
+                        Button(
+                            onClick = {
+                                viewModel.respondToGoal(goal.id, PracticalGoalResponse.Accept)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text("Use this goal") }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
                             OutlinedButton(
                                 onClick = {
                                     viewModel.respondToGoal(goal.id, PracticalGoalResponse.Defer)
                                 },
-                            ) { Text("Later") }
+                                modifier = Modifier.weight(1f),
+                            ) { Text("Decide later") }
                             OutlinedButton(
                                 onClick = {
                                     viewModel.respondToGoal(goal.id, PracticalGoalResponse.Reject)
                                 },
-                            ) { Text("Not my goal") }
+                                modifier = Modifier.weight(1f),
+                            ) { Text("This isn't my goal") }
                         }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = { viewModel.saveGoal(goal.id) }) { Text("Save changes") }
                         OutlinedButton(
                             onClick = { viewModel.removeGoal(goal.id) },
                         ) { Text("Remove") }
@@ -159,7 +167,13 @@ fun CoachMemoryScreen(
             }
         }
 
-        Text("Recent lesson records", style = MaterialTheme.typography.titleLarge)
+        Text("Recent lessons", style = MaterialTheme.typography.titleLarge)
+        if (state.recentLessons.isEmpty()) {
+            Text(
+                "Your completed lessons will appear here.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         state.recentLessons.forEach { lesson ->
             Card {
                 Column(
@@ -167,20 +181,47 @@ fun CoachMemoryScreen(
                     verticalArrangement = Arrangement.spacedBy(5.dp),
                 ) {
                     Text(
-                        "${lesson.targetLang.ifBlank { "Language not recorded" }} · ${lesson.processingState}",
+                        listOfNotNull(
+                            lesson.targetLanguage.takeIf(String::isNotBlank),
+                            formatTimestamp(lesson.startedAt),
+                        ).joinToString(" · "),
                         style = MaterialTheme.typography.labelLarge,
                     )
-                    lesson.strength?.takeIf(String::isNotBlank)?.let { Text("Demonstrated: $it") }
-                    lesson.nextStep?.takeIf(String::isNotBlank)?.let { Text("Next step: $it") }
-                    lesson.assignment?.takeIf(String::isNotBlank)?.let { Text("Practice: $it") }
-                    lesson.processingError?.let {
-                        Text(it, color = MaterialTheme.colorScheme.error)
+                    lesson.summary?.takeIf(String::isNotBlank)?.let { Text(it) }
+                    lesson.strength?.takeIf(String::isNotBlank)?.let { Text("What went well: $it") }
+                    lesson.nextStep?.takeIf(String::isNotBlank)?.let { Text("Next lesson: $it") }
+                    lesson.assignment?.takeIf(String::isNotBlank)?.let { Text("Before then: $it") }
+                    when (lesson.recapStatus) {
+                        LessonRecapStatus.Queued, LessonRecapStatus.Preparing -> Text(
+                            "Preparing your recap…",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        LessonRecapStatus.Failed -> Text(
+                            "The recap isn't ready. You can try again.",
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                        LessonRecapStatus.Removed -> Text(
+                            "This unfinished recap was removed.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        LessonRecapStatus.Ready, LessonRecapStatus.None -> Unit
                     }
-                    if (lesson.processingState in setOf("Pending", "Failed")) {
-                        OutlinedButton(
-                            onClick = { viewModel.discardLessonTranscript(lesson.id) },
-                        ) {
-                            Text("Discard raw transcript")
+                    if (lesson.recapStatus in setOf(LessonRecapStatus.Queued, LessonRecapStatus.Failed)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = { viewModel.retryLessonRecap(lesson.id) },
+                                enabled = state.retryingLessonId == null,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(if (state.retryingLessonId == lesson.id) "Retrying…" else "Retry recap")
+                            }
+                            OutlinedButton(
+                                onClick = { viewModel.discardLessonTranscript(lesson.id) },
+                                enabled = state.retryingLessonId == null,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text("Remove unfinished lesson")
+                            }
                         }
                     }
                 }
@@ -190,5 +231,5 @@ fun CoachMemoryScreen(
 }
 
 private fun formatTimestamp(epochMillis: Long): String {
-    return Instant.fromEpochMilliseconds(epochMillis).toString()
+    return Instant.fromEpochMilliseconds(epochMillis).toString().substringBefore('T')
 }

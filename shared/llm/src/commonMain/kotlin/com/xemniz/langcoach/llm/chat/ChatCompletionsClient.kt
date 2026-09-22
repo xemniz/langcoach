@@ -10,7 +10,6 @@ import io.ktor.client.request.headers
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -50,9 +49,7 @@ class ChatCompletionsClient(
                 setBody(request)
             }
             if (resp.status != HttpStatusCode.OK) {
-                val body = resp.bodyAsText()
-                println("CHAT[$schemaName]: HTTP ${resp.status.value} body=${body.take(500)}")
-                return AppResult.Failure(AppError.Api("OpenAI error ${resp.status.value}: ${body.take(200)}", resp.status.value))
+                return AppResult.Failure(AppError.Api("OpenAI request failed", resp.status.value))
             }
             val parsed: WireChatResponse = resp.body()
             val content = parsed.choices.firstOrNull()?.message?.content
@@ -62,8 +59,7 @@ class ChatCompletionsClient(
             AppResult.Success(StructuredOutput(value, usage?.prompt_tokens ?: 0, usage?.completion_tokens ?: 0))
         }.getOrElse { t ->
             if (t is kotlin.coroutines.cancellation.CancellationException) throw t
-            println("CHAT[$schemaName]: threw ${t::class.simpleName}: ${t.message}")
-            AppResult.Failure(AppError.Network(t.message ?: "Network error"))
+            AppResult.Failure(AppError.Network("Network request failed"))
         }
     }
 

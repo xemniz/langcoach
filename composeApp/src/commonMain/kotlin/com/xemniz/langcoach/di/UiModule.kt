@@ -6,7 +6,6 @@ import com.xemniz.langcoach.ui.coach.CoachMemoryViewModel
 import com.xemniz.langcoach.ui.errors.ErrorsViewModel
 import com.xemniz.langcoach.ui.home.HomeViewModel
 import com.xemniz.langcoach.ui.settings.SettingsViewModel
-import com.xemniz.langcoach.ui.usage.UsageDashboardViewModel
 import com.xemniz.langcoach.ui.vocab.VocabListViewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.core.module.dsl.factoryOf
@@ -20,6 +19,5 @@ val uiModule = module {
     viewModelOf(::CallViewModel)
     viewModelOf(::VocabListViewModel)
     viewModelOf(::ErrorsViewModel)
-    viewModelOf(::UsageDashboardViewModel)
     viewModelOf(::CoachMemoryViewModel)
 }
