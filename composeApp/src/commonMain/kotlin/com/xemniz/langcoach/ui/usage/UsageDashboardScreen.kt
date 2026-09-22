@@ -37,8 +37,12 @@ fun UsageDashboardScreen(viewModel: UsageDashboardViewModel = koinViewModel()) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 StatCard(
-                    title = "Estimated cost",
-                    value = formatDollars(state.totalCostCents),
+                    title = "Cost estimate",
+                    value = if (state.totalTokens > 0 && state.totalCostCents == 0) {
+                        "Unavailable"
+                    } else {
+                        formatDollars(state.totalCostCents)
+                    },
                     modifier = Modifier.weight(1f),
                 )
                 StatCard(
@@ -104,7 +108,11 @@ private fun UsageRow(entry: UsageEntry) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Text(formatDollars(entry.costCents), style = MaterialTheme.typography.bodyMedium)
+        Text(
+            if (entry.tokensIn + entry.tokensOut > 0 && entry.costCents == 0) "—"
+            else formatDollars(entry.costCents),
+            style = MaterialTheme.typography.bodyMedium,
+        )
     }
 }
 

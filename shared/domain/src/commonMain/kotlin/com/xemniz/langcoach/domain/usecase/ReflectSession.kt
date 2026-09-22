@@ -86,7 +86,9 @@ class ReflectSession(
         val allowedCodes = categories.map { it.code }
         val codeToId = categories.associate { it.code to it.id }
         val sessionPlan = existing.toSessionPlan()
-        val tentativeGoal = practicalGoals.tentative(targetLang)
+        val tentativeGoal = existing.tentativePracticalGoalId
+            ?.let { practicalGoals.byId(it) }
+            ?.takeIf { it.status == com.xemniz.langcoach.data.db.PracticalGoalStatus.Tentative }
         val result = reflectionService.reflect(
             targetLang = targetLang,
             nativeLang = nativeLang,
@@ -194,12 +196,18 @@ class ReflectSession(
         val memoryUsage = updateUserModel(
             transcript = transcript,
             sessionSummary = reflected.summary,
+            sessionId = sessionId,
             targetLang = targetLang,
             nativeLang = nativeLang,
             atMillis = atMillis,
         )
-        val extraTokensIn = (memoryUsage as? AppResult.Success)?.value?.tokensIn ?: 0
-        val extraTokensOut = (memoryUsage as? AppResult.Success)?.value?.tokensOut ?: 0
+        if (memoryUsage is AppResult.Failure) {
+            sessionRepo.markReflectionFailed(sessionId, memoryUsage.error.message)
+            return memoryUsage
+        }
+        val appliedMemoryUsage = (memoryUsage as AppResult.Success).value
+        val extraTokensIn = appliedMemoryUsage.tokensIn
+        val extraTokensOut = appliedMemoryUsage.tokensOut
         usageRepo.replaceForSessionEndpoint(
             UsageEntry(
                 createdAt = atMillis,

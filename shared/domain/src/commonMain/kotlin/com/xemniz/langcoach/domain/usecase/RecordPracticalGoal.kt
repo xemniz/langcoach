@@ -66,13 +66,17 @@ class RecordPracticalGoal(
         atMillis: Long = Clock.System.now().toEpochMilliseconds(),
     ): PracticalGoal? {
         val existing = store.byId(goalId) ?: return null
+        if (existing.status == PracticalGoalStatus.Rejected || existing.description.isBlank()) {
+            return null
+        }
         val status = when (response) {
             PracticalGoalResponse.Accept -> PracticalGoalStatus.Confirmed
             PracticalGoalResponse.Defer -> PracticalGoalStatus.Deferred
             PracticalGoalResponse.Reject -> PracticalGoalStatus.Rejected
         }
         if (status == PracticalGoalStatus.Confirmed) {
-            store.deferOtherConfirmed(existing.targetLang, existing.id, atMillis)
+            if (!store.confirm(existing.id, existing.targetLang, atMillis)) return null
+            return store.byId(existing.id)
         }
         return store.save(
             existing.copy(
@@ -103,11 +107,14 @@ class RecordPracticalGoal(
             PracticalGoalResponse.Defer -> PracticalGoalStatus.Deferred
             PracticalGoalResponse.Reject -> PracticalGoalStatus.Rejected
         }
-        if (!store.updateTentativeStatus(goalId, status, atMillis)) return null
-        val updated = store.byId(goalId) ?: return null
-        if (status == PracticalGoalStatus.Confirmed) {
-            store.deferOtherConfirmed(updated.targetLang, updated.id, atMillis)
+        val changed = if (status == PracticalGoalStatus.Confirmed) {
+            val goal = store.byId(goalId) ?: return null
+            store.confirmTentative(goalId, goal.targetLang, atMillis)
+        } else {
+            store.updateTentativeStatus(goalId, status, atMillis)
         }
+        if (!changed) return null
+        val updated = store.byId(goalId) ?: return null
         return updated
     }
 
@@ -119,10 +126,14 @@ class RecordPracticalGoal(
         val existing = store.byId(goalId) ?: return null
         val clean = description.trim()
         if (clean.isEmpty()) return null
-        return store.save(existing.copy(description = clean, updatedAt = atMillis))
+        if (!store.editIfActive(goalId, clean, atMillis)) return null
+        return store.byId(goalId)
     }
 
-    suspend fun remove(goalId: Long) = store.delete(goalId)
+    suspend fun remove(
+        goalId: Long,
+        atMillis: Long = Clock.System.now().toEpochMilliseconds(),
+    ) = store.remove(goalId, atMillis)
 
     private companion object {
         const val MINIMUM_CONFIDENCE = 0.8

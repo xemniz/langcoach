@@ -14,6 +14,7 @@ class SessionRepo(private val dao: SessionDao) {
         objectiveDescription: String? = null,
         objectiveTarget: String? = null,
         objectiveSuccessCriteria: String? = null,
+        tentativePracticalGoalId: Long? = null,
         nativeLang: String = "",
         targetLang: String = "",
         level: String = "",
@@ -26,6 +27,7 @@ class SessionRepo(private val dao: SessionDao) {
             objectiveDescription = objectiveDescription,
             objectiveTarget = objectiveTarget,
             objectiveSuccessCriteria = objectiveSuccessCriteria,
+            tentativePracticalGoalId = tentativePracticalGoalId,
             nativeLang = nativeLang,
             targetLang = targetLang,
             level = level,
@@ -64,8 +66,12 @@ class SessionRepo(private val dao: SessionDao) {
 
     suspend fun transcriptTurns(id: Long): List<SessionTurn> = dao.turns(id)
 
+    suspend fun discardPendingTranscript(id: Long): Boolean =
+        dao.discardPendingTranscript(id) == 1
+
     suspend fun pendingReflectionIds(): List<Long> = dao.pendingReflectionIds()
-    suspend fun recoverInterruptedReflections() = dao.recoverInterruptedReflections()
+    suspend fun recoverInterruptedReflections(staleBefore: Long) =
+        dao.recoverInterruptedReflections(staleBefore)
     suspend fun markReflectionStarted(id: Long, startedAt: Long): Boolean =
         dao.markReflectionStarted(id, startedAt) == 1
     suspend fun markReflectionFailed(id: Long, error: String) = dao.markReflectionFailed(id, error)
@@ -78,7 +84,7 @@ class SessionRepo(private val dao: SessionDao) {
         tokensIn: Int,
         tokensOut: Int,
         completedAt: Long,
-    ) = dao.completeReflection(
+    ) = dao.completeReflectionAndForgetTranscript(
         id, summary, strength, nextStep, assignment, tokensIn, tokensOut, completedAt,
     )
 

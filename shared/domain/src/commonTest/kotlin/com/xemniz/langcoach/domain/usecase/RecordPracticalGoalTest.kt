@@ -170,7 +170,9 @@ class RecordPracticalGoalTest {
 
         goals.remove(tentative.id)
 
-        assertEquals(null, store.byId(tentative.id))
+        assertEquals("", store.byId(tentative.id)?.description)
+        assertEquals(PracticalGoalStatus.Rejected, store.byId(tentative.id)?.status)
+        assertEquals(0, store.active("es").size)
     }
 
     private fun confirmedGoal(id: Long, description: String) = PracticalGoal(
@@ -202,8 +204,17 @@ private class FakePracticalGoalStore : PracticalGoalStore {
     override suspend fun bySourceSessionId(sourceSessionId: Long): PracticalGoal? =
         records.firstOrNull { it.sourceSessionId == sourceSessionId }
 
-    override suspend fun delete(id: Long) {
-        records.removeAll { it.id == id }
+    override suspend fun remove(id: Long, updatedAt: Long) {
+        val index = records.indexOfFirst { it.id == id }
+        if (index >= 0) {
+            records[index] = records[index].copy(
+                description = "",
+                evidenceTurnId = "",
+                evidenceText = "",
+                status = PracticalGoalStatus.Rejected,
+                updatedAt = updatedAt,
+            )
+        }
     }
 
     override suspend fun active(targetLang: String): List<PracticalGoal> = records.filter {
@@ -242,6 +253,40 @@ private class FakePracticalGoalStore : PracticalGoalStore {
         val index = records.indexOfFirst { it.id == id && it.status == PracticalGoalStatus.Tentative }
         if (index < 0) return false
         records[index] = records[index].copy(status = status, updatedAt = updatedAt)
+        return true
+    }
+
+    override suspend fun confirm(id: Long, targetLang: String, updatedAt: Long): Boolean {
+        deferOtherConfirmed(targetLang, id, updatedAt)
+        val index = records.indexOfFirst { it.id == id }
+        if (index < 0) return false
+        records[index] = records[index].copy(
+            status = PracticalGoalStatus.Confirmed,
+            updatedAt = updatedAt,
+        )
+        return true
+    }
+
+    override suspend fun confirmTentative(
+        id: Long,
+        targetLang: String,
+        updatedAt: Long,
+    ): Boolean {
+        val changed = updateTentativeStatus(id, PracticalGoalStatus.Confirmed, updatedAt)
+        if (changed) deferOtherConfirmed(targetLang, id, updatedAt)
+        return changed
+    }
+
+    override suspend fun editIfActive(
+        id: Long,
+        description: String,
+        updatedAt: Long,
+    ): Boolean {
+        val index = records.indexOfFirst {
+            it.id == id && it.status != PracticalGoalStatus.Rejected
+        }
+        if (index < 0) return false
+        records[index] = records[index].copy(description = description, updatedAt = updatedAt)
         return true
     }
 

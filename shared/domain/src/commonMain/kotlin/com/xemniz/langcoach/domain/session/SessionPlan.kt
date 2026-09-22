@@ -82,4 +82,5 @@ data class PreparedSession(
     val nativeLanguage: String,
     val targetLanguage: String,
     val level: String,
+    val tentativePracticalGoalId: Long? = null,
 )

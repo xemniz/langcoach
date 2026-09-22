@@ -9,3 +9,5 @@
 - [x] Ending a lesson saves its context and turns before background reflection begins.
 - [x] Pending and failed lessons can be retried, with visible processing state and no duplicate learning records.
 - [x] Changing profile settings after a lesson does not reinterpret that lesson.
+
+Raw turns are retained only while reflection is pending or failed. Successful completion atomically stores the derived lesson record and deletes the raw transcript.

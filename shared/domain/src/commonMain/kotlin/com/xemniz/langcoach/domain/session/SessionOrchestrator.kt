@@ -27,7 +27,7 @@ class SessionOrchestrator(
         val due = getDueVocab().take(10)
         val weak = getWeakCategories(windowDays = 14, limit = 5)
         val recent = getRecentSessions(limit = 3).reversed()
-        val userModel = userModelRepo.getContent()
+        val userModel = userModelRepo.getContent(targetLang)
         val confirmedGoal = practicalGoals.confirmed(targetLang)
         val tentativeGoal = practicalGoals.tentative(targetLang)
 
@@ -102,6 +102,7 @@ class SessionOrchestrator(
             nativeLanguage = nativeLang,
             targetLanguage = targetLang,
             level = level,
+            tentativePracticalGoalId = tentativeGoal?.id,
         )
     }
 

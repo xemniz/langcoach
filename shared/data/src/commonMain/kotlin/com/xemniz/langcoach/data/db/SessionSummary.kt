@@ -19,6 +19,7 @@ data class SessionSummary(
     val objectiveDescription: String? = null,
     val objectiveTarget: String? = null,
     val objectiveSuccessCriteria: String? = null,
+    val tentativePracticalGoalId: Long? = null,
     val objectiveOutcome: String? = null,
     val objectiveEvidenceTurnId: String? = null,
     val objectiveEvidenceText: String? = null,

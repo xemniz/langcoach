@@ -166,6 +166,7 @@ class ReflectionServiceImpl(
             )
         }
         val objectiveEvaluation = when (objectiveResult) {
+            is AppResult.Failure -> return objectiveResult
             is AppResult.Success -> {
                 val value = objectiveResult.value.value
                 ObjectiveOutcome.entries
@@ -179,7 +180,7 @@ class ReflectionServiceImpl(
                         )
                     }
             }
-            else -> null
+            null -> null
         }
 
         val objectiveTokensIn = (objectiveResult as? AppResult.Success)?.value?.tokensIn ?: 0

@@ -176,7 +176,13 @@ fun HomeScreen(
             ) {
                 MetricCard("${state.dueCount}", "due today", Modifier.weight(1f), onVocabClick)
                 MetricCard("${state.weakCount}", "focus areas", Modifier.weight(1f), onProgressClick)
-                MetricCard(formatCost(state.totalCostCents), "AI spend", Modifier.weight(1f), onProgressClick)
+                MetricCard(
+                    if (state.totalTokens > 0 && state.totalCostCents == 0) "—"
+                    else formatCost(state.totalCostCents),
+                    "cost estimate",
+                    Modifier.weight(1f),
+                    onProgressClick,
+                )
             }
         }
 

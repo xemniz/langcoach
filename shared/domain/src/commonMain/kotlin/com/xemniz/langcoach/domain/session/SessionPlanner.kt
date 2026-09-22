@@ -32,7 +32,7 @@ class SessionPlanner {
         }
         return objective.copy(
             lessonFormat = lessonFormat(context, objective.kind),
-            material = preparedMaterial(context),
+            material = preparedMaterial(context, objective),
             supportGuidance = supportGuidance(context.level),
             courseDirection = context.confirmedPracticalGoal,
             goalConfirmationPrompt = context.tentativePracticalGoal?.let {
@@ -100,12 +100,25 @@ class SessionPlanner {
             else -> LessonFormat.TestTeachTest
         }
 
-    private fun preparedMaterial(context: SessionPlanningContext): String {
+    private fun preparedMaterial(context: SessionPlanningContext, objective: SessionPlan): String {
         val goal = context.tentativePracticalGoal ?: context.confirmedPracticalGoal
-        return if (goal == null) {
-            "Use one short model or diagnostic task based on the learner's opening topic."
-        } else {
-            "Use a short model and a changed-context practice related to $goal."
+        val situation = goal?.let { "the real-world goal “$it”" }
+            ?: "the learner's opening topic"
+        return when (objective.kind) {
+            SessionObjectiveKind.ErrorPattern ->
+                "Task card — Situation: $situation. Learner task: describe one decision in two " +
+                    "connected sentences and give the reason. Target to observe: ${objective.target}. " +
+                    "Feedback card: contrast only the learner's form with its correction. Transfer " +
+                    "card: give the same message to a different person and change the reason."
+            SessionObjectiveKind.VocabularyRetrieval ->
+                "Task card — Situation: $situation. Learner task: explain what is needed and why, " +
+                    "using “${objective.target}”. Cue card, reveal in order only if needed: meaning, " +
+                    "then first sound. Transfer card: change the person and place; ask for the same " +
+                    "meaning again without a cue."
+            SessionObjectiveKind.ConversationFluency ->
+                "Task card — Situation: $situation. Learner task: state what happened, why it matters, " +
+                    "and what should happen next. Complication card: the other person disagrees with " +
+                    "one reason. Closing card: the learner gives a two-sentence recap and decision."
         }
     }
 

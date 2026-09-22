@@ -150,11 +150,12 @@ class CallViewModel internal constructor(
         if (_state.value is CallState.Failed || _state.value is CallState.Ended) return
         val interrupted = _state.value as? CallState.Live
         val interruptedSessionId = sessionId
+        val fallbackUsage = coordinator.state.value.usage
         _state.value = CallState.Failed(message)
-        viewModelScope.launch {
-            val usage = runCatching { coordinator.stop() }.getOrNull()
+        appScope.scope.launch {
+            val usage = runCatching { coordinator.stop() }.getOrDefault(fallbackUsage)
             runCatching { callSessionLifecycle.stop() }
-            if (interrupted != null && interruptedSessionId != null && usage != null) {
+            if (interrupted != null && interruptedSessionId != null) {
                 val transcript = renderTranscript(interrupted.messages)
                 runCatching {
                     finishSession(
@@ -163,7 +164,12 @@ class CallViewModel internal constructor(
                         tokensOut = usage.tokensOut,
                         transcript = transcript,
                     )
-                    appScope.scope.launch { reflectSession(interruptedSessionId) }
+                    reflectSession(interruptedSessionId)
+                }.onFailure { failure ->
+                    _state.value = CallState.Failed(
+                        "$message Lesson record could not be saved: " +
+                            (failure.message ?: "unknown storage error"),
+                    )
                 }
             }
         }
@@ -172,38 +178,43 @@ class CallViewModel internal constructor(
     private fun end() {
         if (ending) return
         ending = true
-        viewModelScope.launch {
-            val usage = coordinator.stop()
-            callSessionLifecycle.stop()
-            val current = _state.value
-            val transcript = if (current is CallState.Live) {
-                renderTranscript(current.messages)
-            } else {
-                SessionTranscript(emptyList())
-            }
-            val id = sessionId
-            if (id != null) {
-                finishSession(
-                    sessionId = id,
-                    tokensIn = usage.tokensIn,
-                    tokensOut = usage.tokensOut,
-                    transcript = transcript,
-                )
-                _state.value = CallState.ProcessingSummary
-                appScope.scope.launch {
-                    val result = reflectSession(sessionId = id)
-                    val lesson = sessions.byId(id)
-                    _state.value = CallState.Ended(
-                        summary = lesson?.summary,
-                        strength = lesson?.strength,
-                        nextStep = lesson?.nextStep,
-                        assignment = lesson?.assignment,
-                        processingError = (result as? AppResult.Failure)?.error?.message
-                            ?: lesson?.processingError,
+        val live = _state.value as? CallState.Live
+        val fallbackUsage = coordinator.state.value.usage
+        appScope.scope.launch {
+            try {
+                val usage = runCatching { coordinator.stop() }.getOrDefault(fallbackUsage)
+                runCatching { callSessionLifecycle.stop() }
+                val transcript = live?.let { renderTranscript(it.messages) }
+                    ?: SessionTranscript(emptyList())
+                val id = sessionId
+                if (id != null) {
+                    finishSession(
+                        sessionId = id,
+                        tokensIn = usage.tokensIn,
+                        tokensOut = usage.tokensOut,
+                        transcript = transcript,
                     )
+                    _state.value = CallState.ProcessingSummary
+                    appScope.scope.launch {
+                        val result = reflectSession(sessionId = id)
+                        val lesson = sessions.byId(id)
+                        _state.value = CallState.Ended(
+                            summary = lesson?.summary,
+                            strength = lesson?.strength,
+                            nextStep = lesson?.nextStep,
+                            assignment = lesson?.assignment,
+                            processingError = (result as? AppResult.Failure)?.error?.message
+                                ?: lesson?.processingError,
+                        )
+                    }
+                } else {
+                    _state.value = CallState.Ended()
                 }
-            } else {
-                _state.value = CallState.Ended()
+            } catch (failure: Throwable) {
+                ending = false
+                _state.value = CallState.Failed(
+                    failure.message ?: "Could not save this lesson for processing",
+                )
             }
         }
     }

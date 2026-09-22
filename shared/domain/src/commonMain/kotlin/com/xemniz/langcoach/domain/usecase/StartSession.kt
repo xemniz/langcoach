@@ -18,6 +18,7 @@ class StartSession(private val sessionRepo: SessionRepo) {
             objectiveDescription = plan.objective,
             objectiveTarget = plan.target,
             objectiveSuccessCriteria = plan.successCriteria,
+            tentativePracticalGoalId = preparedSession.tentativePracticalGoalId,
             nativeLang = preparedSession.nativeLanguage,
             targetLang = preparedSession.targetLanguage,
             level = preparedSession.level,

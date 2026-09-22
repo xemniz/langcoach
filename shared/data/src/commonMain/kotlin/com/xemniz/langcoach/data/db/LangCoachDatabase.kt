@@ -14,16 +14,18 @@ import androidx.room3.RoomDatabaseConstructor
         SessionSummary::class,
         UsageEntry::class,
         UserModel::class,
+        UserModelLanguage::class,
         PracticalGoal::class,
         SessionTurn::class,
     ],
-    version = 7,
+    version = 8,
     autoMigrations = [
         AutoMigration(from = 2, to = 3),
         AutoMigration(from = 3, to = 4),
         AutoMigration(from = 4, to = 5),
         AutoMigration(from = 5, to = 6),
         AutoMigration(from = 6, to = 7),
+        AutoMigration(from = 7, to = 8),
     ],
 )
 @ConstructedBy(LangCoachDatabaseConstructor::class)

@@ -145,6 +145,11 @@ fun CoachMemoryScreen(
                                     viewModel.respondToGoal(goal.id, PracticalGoalResponse.Defer)
                                 },
                             ) { Text("Later") }
+                            OutlinedButton(
+                                onClick = {
+                                    viewModel.respondToGoal(goal.id, PracticalGoalResponse.Reject)
+                                },
+                            ) { Text("Not my goal") }
                         }
                         OutlinedButton(
                             onClick = { viewModel.removeGoal(goal.id) },
@@ -170,6 +175,13 @@ fun CoachMemoryScreen(
                     lesson.assignment?.takeIf(String::isNotBlank)?.let { Text("Practice: $it") }
                     lesson.processingError?.let {
                         Text(it, color = MaterialTheme.colorScheme.error)
+                    }
+                    if (lesson.processingState in setOf("Pending", "Failed")) {
+                        OutlinedButton(
+                            onClick = { viewModel.discardLessonTranscript(lesson.id) },
+                        ) {
+                            Text("Discard raw transcript")
+                        }
                     }
                 }
             }

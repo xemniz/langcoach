@@ -41,11 +41,11 @@ interface SessionDao {
     @Query("SELECT * FROM session_turns WHERE sessionId = :sessionId ORDER BY position ASC")
     suspend fun turns(sessionId: Long): List<SessionTurn>
 
-    @Query("SELECT id FROM session_summaries WHERE processingState IN ('Pending', 'Failed', 'Processing') ORDER BY endedAt ASC")
+    @Query("SELECT id FROM session_summaries WHERE processingState IN ('Pending', 'Failed') ORDER BY endedAt ASC")
     suspend fun pendingReflectionIds(): List<Long>
 
-    @Query("UPDATE session_summaries SET processingState = 'Pending', processingError = 'Interrupted while processing; retrying' WHERE processingState = 'Processing'")
-    suspend fun recoverInterruptedReflections()
+    @Query("UPDATE session_summaries SET processingState = 'Pending', processingError = 'Interrupted while processing; retrying' WHERE processingState = 'Processing' AND (reflectionStartedAt IS NULL OR reflectionStartedAt <= :staleBefore)")
+    suspend fun recoverInterruptedReflections(staleBefore: Long)
 
     @Query("UPDATE session_summaries SET processingState = 'Processing', processingError = NULL, reflectionStartedAt = :startedAt WHERE id = :id AND processingState IN ('Pending', 'Failed')")
     suspend fun markReflectionStarted(id: Long, startedAt: Long): Int
@@ -64,6 +64,31 @@ interface SessionDao {
         tokensOut: Int,
         completedAt: Long,
     )
+
+    @Transaction
+    suspend fun completeReflectionAndForgetTranscript(
+        id: Long,
+        summary: String,
+        strength: String,
+        nextStep: String,
+        assignment: String,
+        tokensIn: Int,
+        tokensOut: Int,
+        completedAt: Long,
+    ) {
+        completeReflection(id, summary, strength, nextStep, assignment, tokensIn, tokensOut, completedAt)
+        deleteTurns(id)
+    }
+
+    @Query("UPDATE session_summaries SET processingState = 'Discarded', processingError = NULL WHERE id = :id AND processingState IN ('Pending', 'Failed')")
+    suspend fun markDiscarded(id: Long): Int
+
+    @Transaction
+    suspend fun discardPendingTranscript(id: Long): Int {
+        val changed = markDiscarded(id)
+        if (changed == 1) deleteTurns(id)
+        return changed
+    }
 
     @Query(
         """

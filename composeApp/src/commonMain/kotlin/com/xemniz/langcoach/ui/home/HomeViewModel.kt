@@ -23,6 +23,7 @@ data class HomeState(
     val dueCount: Int = 0,
     val weakCount: Int = 0,
     val totalCostCents: Int = 0,
+    val totalTokens: Int = 0,
     val hasApiKey: Boolean = false,
     val lessonsProcessedOnRefresh: Int = 0,
     val lessonsNeedingAttention: Int = 0,
@@ -54,6 +55,7 @@ class HomeViewModel(
             val due = getDueVocab().size
             val weak = getWeakCategories(windowDays = 14, limit = 10).size
             val cost = usageRepo.totalCostCents()
+            val tokens = usageRepo.totalTokens()
             val hasApiKey = !secureStorage.read(OPENAI_API_KEY).isNullOrBlank()
             val targetLanguage = profilePrefs.targetLang.first()
             val level = profilePrefs.level.first().name
@@ -67,6 +69,7 @@ class HomeViewModel(
                     dueCount = due,
                     weakCount = weak,
                     totalCostCents = cost,
+                    totalTokens = tokens,
                     hasApiKey = hasApiKey,
                     lessonsProcessedOnRefresh = processing.completed,
                     lessonsNeedingAttention = processing.failedSessionIds.size,
