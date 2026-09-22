@@ -45,5 +45,8 @@ DerivedData/
 
 # Misc
 *.log
+*.pyc
+__pycache__/
 .env
 .env.local
+exports/transcripts/

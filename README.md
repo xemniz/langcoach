@@ -53,6 +53,18 @@ on an iPhone simulator or device.
 For a real voice session, add an OpenAI API key in **Settings**. The key remains in
 platform secure storage and is never committed to the repository.
 
+Completed voice-session transcripts remain in the local database. With a debuggable
+Android build connected and authorized over USB, download the latest transcript as
+JSON and Markdown with:
+
+```bash
+./scripts/export_android_transcripts.py
+```
+
+Pass `--all` to export every retained session. Exports are written to
+`exports/transcripts/`, which is excluded from Git because transcripts contain private
+conversation data.
+
 ```bash
 ./gradlew :androidApp:assembleDebug \
   :composeApp:testDebugUnitTest \

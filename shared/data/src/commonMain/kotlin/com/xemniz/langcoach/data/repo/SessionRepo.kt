@@ -84,7 +84,7 @@ class SessionRepo(private val dao: SessionDao) {
         tokensIn: Int,
         tokensOut: Int,
         completedAt: Long,
-    ) = dao.completeReflectionAndForgetTranscript(
+    ) = dao.completeReflection(
         id, summary, strength, nextStep, assignment, tokensIn, tokensOut, completedAt,
     )
 

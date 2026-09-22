@@ -38,6 +38,10 @@ kotlin {
             implementation(libs.koin.core)
         }
 
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
+
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)
             implementation(libs.androidx.security.crypto)

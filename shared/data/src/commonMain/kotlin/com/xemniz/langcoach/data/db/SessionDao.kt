@@ -65,21 +65,6 @@ interface SessionDao {
         completedAt: Long,
     )
 
-    @Transaction
-    suspend fun completeReflectionAndForgetTranscript(
-        id: Long,
-        summary: String,
-        strength: String,
-        nextStep: String,
-        assignment: String,
-        tokensIn: Int,
-        tokensOut: Int,
-        completedAt: Long,
-    ) {
-        completeReflection(id, summary, strength, nextStep, assignment, tokensIn, tokensOut, completedAt)
-        deleteTurns(id)
-    }
-
     @Query("UPDATE session_summaries SET processingState = 'Discarded', processingError = NULL WHERE id = :id AND processingState IN ('Pending', 'Failed')")
     suspend fun markDiscarded(id: Long): Int
 
