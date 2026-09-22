@@ -43,13 +43,14 @@ class LangCoachApp : Application() {
         }
         val errorRepo: ErrorRepo by inject()
         val secureStorage: SecureStorage by inject()
+        provisionDebugApiKeyBeforeUi(
+            isDebug = BuildConfig.DEBUG,
+            configuredKey = BuildConfig.DEV_OPENAI_API_KEY,
+            readExisting = { secureStorage.read(OPENAI_API_KEY) },
+            save = { secureStorage.save(OPENAI_API_KEY, it) },
+        )
         appScope.launch {
             errorRepo.seedTaxonomyIfEmpty()
-            if (BuildConfig.DEBUG && BuildConfig.DEV_OPENAI_API_KEY.isNotBlank() &&
-                secureStorage.read(OPENAI_API_KEY) == null
-            ) {
-                secureStorage.save(OPENAI_API_KEY, BuildConfig.DEV_OPENAI_API_KEY)
-            }
         }
     }
 }
